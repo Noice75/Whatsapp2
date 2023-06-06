@@ -44,6 +44,7 @@ class initialize:
         browser : str = 'Chrome',
         headless : bool = False,
         spawnQrWindow : bool = True,
+        terminalQR : bool = True,
         profile : str = "Default",
         waitTime : int = 0,
         customDriver = None,
@@ -88,7 +89,7 @@ class initialize:
             self.clean()
 
         self._initializeDriverPreference()
-        startup(spawnQrWindow=spawnQrWindow).waitToLoad(waitTime=waitTime)
+        startup(spawnQrWindow=spawnQrWindow, terminalQR=terminalQR).waitToLoad(waitTime=waitTime)
         pass
 
     def _initializeDriverPreference(self):
@@ -178,7 +179,7 @@ class initialize:
                 print("Error: %s - %s." % (e.filename, e.strerror))
 
 class startup:
-    def __init__(self, spawnQrWindow : bool) -> None:
+    def __init__(self, spawnQrWindow : bool, terminalQR : bool) -> None:
         self.stopThreads = False
         self.checkLoginThread = None
         self.checkLoadThread = None
@@ -186,6 +187,7 @@ class startup:
         self.wasLoggedOut = False
         self.QRWindow = None
         self.spawnQrWindow = spawnQrWindow
+        self.terminalQR = terminalQR
         pass
 
     def waitToLoad(self, waitTime : int):
@@ -221,7 +223,7 @@ class startup:
 
 
     def checkLogin(self):
-        self.QRWindow = QRWindow(self.spawnQrWindow)
+        self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
         while True:
             if(self.stopThreads == True):
                 logging.info("CheckLogin Thread Stopped!")
@@ -256,10 +258,11 @@ class startup:
                 continue
 
 class QRWindow:
-    def __init__(self, spawnQrWindow : bool):
+    def __init__(self, spawnQrWindow : bool, terminalQR : bool):
         self.__qrcode = __import__("qrcode")
         self.stop = False
         self.spawnQrWindow = spawnQrWindow
+        self.terminalQR = terminalQR
         if(spawnQrWindow):
             from PIL import Image, ImageTk
             self.__tk = __import__("tkinter")
@@ -333,6 +336,8 @@ class QRWindow:
 
     def updateQR(self, qrID):
         lqrID = qrID
+        if(self.spawnQrWindow == False and self.terminalQR == False):
+            return
         while not self.stop:
             try:
                 qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
@@ -343,13 +348,16 @@ class QRWindow:
                     qr = self.__qrcode.QRCode()
                     qr.add_data(qrID)
                     qr.make_image().save(self.filename)
-                threading.Thread(target = self.createTerminalQR, args=(qrID,True)).start()
+                if(self.terminalQR):
+                    threading.Thread(target = self.createTerminalQR, args=(qrID,True)).start()
                 logging.info("Updated QR")
                 lqrID = qrID
             time.sleep(0.5)
 
     def start(self, qrID):
-        threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
+        if(self.terminalQR):
+            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
+            self.updateQR(qrID)
         if(self.spawnQrWindow):
             qr = self.__qrcode.QRCode()
             qr.add_data(qrID)
@@ -357,18 +365,17 @@ class QRWindow:
             logging.info('Starting QRWindow')
             threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
             self.qrWindowREF.mainloop()
-        else:
-            self.updateQR(qrID)
     
     def quit(self):
         self.stop = True
         try:
             self.qrWindowREF.quit()
             logging.info('Quitting QRWindow')
-            sys.stdout.write("\033[27A")
-            for _ in range(27):
-                print(" " * 55)
-            sys.stdout.write("\033[27A\n")
+            if(self.terminalQR):
+                sys.stdout.write("\033[27A")
+                for _ in range(27):
+                    print(" " * 55)
+                sys.stdout.write("\033[27A\n")
         except:
             pass
 
@@ -387,4 +394,4 @@ def onLoad(funRef):
     funRef()
 
 if __name__ == "__main__":
-    initialize(headless=False, log=True, waitTime=0)
+    initialize(headless=True, log=True, logFile=True)

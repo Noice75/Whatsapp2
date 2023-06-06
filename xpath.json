@@ -15,7 +15,7 @@
     "sentChat": "//div[@class=\"n5hs2j7m oq31bsqd gx1rr48f qh5tioqs\"]//div[@class=\"_1-FMR message-out focusable-list-item _7GVCb\"]",
     "neutralChat": "//div[contains(@class, \"_1-FMR\")]",
     "allSentChat": "//div[contains(@class, \"_1-FMR\") and contains(@data-id,\"true\")]",
-    "userAgent_Chrome": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+    "userAgent_Chrome": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     "userAgent_Firefox": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:104.0) Gecko/20100101 Firefox/104.0",
     "mention": "//span[@data-jid]",
     "mention_me": "//span[@class=\"matched-mention inactive-mention i0jNr selectable-text select-all copyable-text\"]",
