@@ -79,7 +79,7 @@ class initialize:
         self.os = sysinfo["System"]
 
         if(log):
-            logLevel = logging.CRITICAL
+            logLevel = logging.INFO
             if(logFile):
                 logging.basicConfig(filename='Debug.log', format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", filemode="w", encoding='utf-8', level=logLevel)
             else:
@@ -349,16 +349,24 @@ class QRWindow:
                     qr.add_data(qrID)
                     qr.make_image().save(self.filename)
                 if(self.terminalQR):
-                    threading.Thread(target = self.createTerminalQR, args=(qrID,True)).start()
+                    self.createTerminalQR(qrID,True)
                 logging.info("Updated QR")
                 lqrID = qrID
             time.sleep(0.5)
 
     def start(self, qrID):
-        if(self.terminalQR):
+        if(self.spawnQrWindow == True and self.terminalQR == True):
+            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
+            qr = self.__qrcode.QRCode()
+            qr.add_data(qrID)
+            qr.make_image().save(self.filename)
+            logging.info('Starting QRWindow')
+            threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
+            self.qrWindowREF.mainloop()
+        if(self.terminalQR == True and self.spawnQrWindow == False):
             threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
             self.updateQR(qrID)
-        if(self.spawnQrWindow):
+        if(self.spawnQrWindow == True and self.terminalQR == False):
             qr = self.__qrcode.QRCode()
             qr.add_data(qrID)
             qr.make_image().save(self.filename)
@@ -369,8 +377,9 @@ class QRWindow:
     def quit(self):
         self.stop = True
         try:
-            self.qrWindowREF.quit()
-            logging.info('Quitting QRWindow')
+            if(self.spawnQrWindow):
+                self.qrWindowREF.quit()
+                logging.info('Quitting QRWindow')
             if(self.terminalQR):
                 sys.stdout.write("\033[27A")
                 for _ in range(27):
