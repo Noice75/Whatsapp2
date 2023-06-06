@@ -57,13 +57,15 @@ class initialize:
         Parameters:
         - browser: Supported Browsers [Chrome, FireFox] default is chrome
         - headless: Runs the Browser as backGround service and no GUI is initialized
+        - spawnQrWindow : Starts a window with Whatsapp login qrcode,
+        - terminalQR : Outputs Whatsapp login qrcode to terminal,
         - profile: Select the chrome/firefox profile where Whatsapp is already loggedin, Profile name can be found at this link `chrome://version/`
         - waitTime: Time to wait for whatsapp to load before session timeout, Make waitTime = 0 if you want to wait forever
         - customDriver: Pass the selenium webdriver if you dont want to use default settings provided by this module
         - profileDir: Pass the path of the custom chrome profile, Only pass the path if you want to use other directory than chromes default directory
         - freshStart: This will logout from whatsapp and make a new start
-        -log: Logs all details to stdout
-        -logFile: Logs to file at root'''
+        - log: Logs all details to stdout
+        - logFile: Logs to file at root'''
 
         global driver
         driver = customDriver
@@ -79,7 +81,7 @@ class initialize:
         self.os = sysinfo["System"]
 
         if(log):
-            logLevel = logging.INFO
+            logLevel = logging.DEBUG
             if(logFile):
                 logging.basicConfig(filename='Debug.log', format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", filemode="w", encoding='utf-8', level=logLevel)
             else:
@@ -158,6 +160,7 @@ class initialize:
             chrome_options.add_argument("disable-infobars")
             chrome_options.add_argument("--log-level=3")
             chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--max-connections=5")
             chrome_options.add_argument('--disable-blink-features=AutomationControlled')
 
             chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
