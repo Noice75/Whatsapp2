@@ -81,7 +81,7 @@ class initialize:
         self.os = sysinfo["System"]
 
         if(log):
-            logLevel = logging.DEBUG
+            logLevel = logging.INFO
             if(logFile):
                 logging.basicConfig(filename='Debug.log', format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", filemode="w", encoding='utf-8', level=logLevel)
             else:
@@ -185,7 +185,6 @@ class startup:
     def __init__(self, spawnQrWindow : bool, terminalQR : bool) -> None:
         self.stopThreads = False
         self.checkLoginThread = None
-        self.checkLoadThread = None
         self.isLoggedin = False
         self.wasLoggedOut = False
         self.QRWindow = None
@@ -196,13 +195,8 @@ class startup:
     def waitToLoad(self, waitTime : int):
 
         self.checkLoginThread = threading.Thread(target=self.checkLogin, daemon=True)
-        self.checkLoadThread = threading.Thread(target=self.checkLoad)
-
         self.checkLoginThread.start()
         logging.info(f"CheckLogin Thread Started!, is_Alive? = {self.checkLoginThread.is_alive()}")
-
-        self.checkLoadThread.start()
-        logging.info(f"CheckLoad Thread Started!, is_Alive? = {self.checkLoadThread.is_alive()}")
 
         t = time.time() + waitTime
         while time.time() < t or waitTime == 0:
@@ -235,41 +229,30 @@ class startup:
 
 
     def checkLogin(self):
-        self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
         while True:
             if(self.stopThreads == True):
                 logging.info("CheckLogin Thread Stopped!")
                 break
 
             try:
-                qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
-                logging.warning("Not Loggedin!")
-                print("Not Loggedin!")
-                self.isLoggedin = False
-                self.wasLoggedOut = True
-                self.QRWindow.start(qrID)
-                break
-            except NoSuchElementException:
-                time.sleep(0.1)
-                continue
-
-    def checkLoad(self):
-        while True:
-            if(self.stopThreads == True):
-                logging.info("CheckLoad Thread Stopped!")
-                break
-
-            try:
                 driver.find_element(By.XPATH, xpathData.get('searchfield'))
                 self.stopThreads = True
                 self.isLoggedin = True
-                logging.info("Stopping Startup Threads")
-                logging.info("CheckLoad Thread Stopped!")
+                logging.info("Stopping Startup Thread")
                 logging.info(f"Is LoggedIn = {self.isLoggedin}")
                 break
-            except:
-                time.sleep(0.1)
-                continue
+            except NoSuchElementException:
+                try:
+                    qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
+                    self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
+                    logging.warning("Not Loggedin!")
+                    print("Not Loggedin!")
+                    self.isLoggedin = False
+                    self.wasLoggedOut = True
+                    self.QRWindow.start(qrID=qrID)
+                except NoSuchElementException:
+                    time.sleep(0.1)
+                    continue
 
 class QRWindow:
     def __init__(self, spawnQrWindow : bool, terminalQR : bool):
@@ -309,11 +292,6 @@ class QRWindow:
 
             self.filename = "qrcode.png"
             self.label = None
-
-            qr = self.__qrcode.QRCode()
-            qr.add_data("ERROR!")
-            qr.make_image().save(self.filename)
-            self.create_qr_image()
 
     def create_qr_image(self):
         try:
@@ -369,17 +347,17 @@ class QRWindow:
                 if(self.terminalQR):
                     self.createTerminalQR(qrID,True)
 
-                logging.info("Updated QR")
                 lqrID = qrID
             time.sleep(0.5)
 
     def start(self, qrID):
         if(self.spawnQrWindow == True and self.terminalQR == True):
-            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
             qr = self.__qrcode.QRCode()
             qr.add_data(qrID)
             qr.make_image().save(self.filename)
+            self.create_qr_image()
             logging.info('Starting QRWindow')
+            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
             threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
             self.qrWindowREF.mainloop()
 
@@ -397,18 +375,14 @@ class QRWindow:
     
     def quit(self):
         self.stop = True
-        try:
-            if(self.spawnQrWindow):
-                self.qrWindowREF.quit()
-                logging.info('Quitting QRWindow')
-
-            if(self.terminalQR):
-                sys.stdout.write("\033[27A")
-                for _ in range(27):
-                    print(" " * 55)
-                sys.stdout.write("\033[27A\n")
-        except:
-            pass
+        if(self.terminalQR):
+            sys.stdout.write("\033[27A")
+            for _ in range(27):
+                print(" " * 55)
+            sys.stdout.write("\033[27A\n")
+        if(self.spawnQrWindow):
+            logging.info('Quitting QRWindow')
+            self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
 
 def getLink(link : str):
     try:
