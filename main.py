@@ -207,13 +207,22 @@ class startup:
                 if(self.wasLoggedOut):
                     if(not self.QRWindow.stop):
                         self.QRWindow.quit()
+
                     self.QRWindow = None
                     driver.refresh()
                     quit()
+                    
+                    if(os.path.exists(f"{dir}/qrcode.png")):
+                        try:
+                            os.remove(rf"{dir}/qrcode.png")
+                        except OSError as e:
+                            print("Error: %s - %s." % (e.filename, e.strerror))
+
                     print("RESTART needed after login")
                     exit()
                 else:
                     break
+            time.sleep(0.5)
         else:
             self.stopThreads = True
             logging.info("Stopping Startup Threads")
@@ -238,6 +247,7 @@ class startup:
                 self.QRWindow.start(qrID)
                 break
             except NoSuchElementException:
+                time.sleep(0.1)
                 continue
 
     def checkLoad(self):
@@ -255,6 +265,7 @@ class startup:
                 logging.info(f"Is LoggedIn = {self.isLoggedin}")
                 break
             except:
+                time.sleep(0.1)
                 continue
 
 class QRWindow:
@@ -316,6 +327,7 @@ class QRWindow:
                 self.label.pack()
         except:
             pass
+
         if(not self.stop):
             self.qrWindowREF.after(1000, self.create_qr_image)
 
@@ -328,9 +340,11 @@ class QRWindow:
         )
         qr.add_data(data)
         qr.make(fit=True)
+
         if(update):
             sys.stdout.write("\033[s")
             sys.stdout.write("\033[27A")
+    
         # qr.print_tty()
         qr.print_ascii()
 
@@ -348,8 +362,10 @@ class QRWindow:
                     qr = self.__qrcode.QRCode()
                     qr.add_data(qrID)
                     qr.make_image().save(self.filename)
+
                 if(self.terminalQR):
                     self.createTerminalQR(qrID,True)
+
                 logging.info("Updated QR")
                 lqrID = qrID
             time.sleep(0.5)
@@ -363,9 +379,11 @@ class QRWindow:
             logging.info('Starting QRWindow')
             threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
             self.qrWindowREF.mainloop()
+
         if(self.terminalQR == True and self.spawnQrWindow == False):
             threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
             self.updateQR(qrID)
+
         if(self.spawnQrWindow == True and self.terminalQR == False):
             qr = self.__qrcode.QRCode()
             qr.add_data(qrID)
@@ -380,6 +398,7 @@ class QRWindow:
             if(self.spawnQrWindow):
                 self.qrWindowREF.quit()
                 logging.info('Quitting QRWindow')
+
             if(self.terminalQR):
                 sys.stdout.write("\033[27A")
                 for _ in range(27):
