@@ -43,6 +43,7 @@ class initialize:
         self,
         browser : str = 'Chrome',
         headless : bool = False,
+        spawnQrWindow : bool = True,
         profile : str = "Default",
         waitTime : int = 0,
         customDriver = None,
@@ -77,7 +78,7 @@ class initialize:
         self.os = sysinfo["System"]
 
         if(log):
-            logLevel = logging.INFO
+            logLevel = logging.CRITICAL
             if(logFile):
                 logging.basicConfig(filename='Debug.log', format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", filemode="w", encoding='utf-8', level=logLevel)
             else:
@@ -87,7 +88,7 @@ class initialize:
             self.clean()
 
         self._initializeDriverPreference()
-        startup().waitToLoad(waitTime=waitTime)
+        startup(spawnQrWindow=spawnQrWindow).waitToLoad(waitTime=waitTime)
         pass
 
     def _initializeDriverPreference(self):
@@ -177,18 +178,19 @@ class initialize:
                 print("Error: %s - %s." % (e.filename, e.strerror))
 
 class startup:
-    def __init__(self) -> None:
+    def __init__(self, spawnQrWindow : bool) -> None:
         self.stopThreads = False
         self.checkLoginThread = None
         self.checkLoadThread = None
         self.isLoggedin = False
         self.wasLoggedOut = False
         self.QRWindow = None
+        self.spawnQrWindow = spawnQrWindow
         pass
 
     def waitToLoad(self, waitTime : int):
 
-        self.checkLoginThread = threading.Thread(target=self.checkLogin)
+        self.checkLoginThread = threading.Thread(target=self.checkLogin, daemon=True)
         self.checkLoadThread = threading.Thread(target=self.checkLoad)
 
         self.checkLoginThread.start()
@@ -201,7 +203,8 @@ class startup:
         while time.time() < t or waitTime == 0:
             if(self.stopThreads):
                 if(self.wasLoggedOut):
-                    self.QRWindow.quit()
+                    if(not self.QRWindow.stop):
+                        self.QRWindow.quit()
                     self.QRWindow = None
                     driver.refresh()
                     quit()
@@ -218,7 +221,7 @@ class startup:
 
 
     def checkLogin(self):
-        self.QRWindow = QRWindow()
+        self.QRWindow = QRWindow(self.spawnQrWindow)
         while True:
             if(self.stopThreads == True):
                 logging.info("CheckLogin Thread Stopped!")
@@ -253,45 +256,47 @@ class startup:
                 continue
 
 class QRWindow:
-    def __init__(self):
-        from PIL import Image, ImageTk
-        self.__tk = __import__("tkinter")
+    def __init__(self, spawnQrWindow : bool):
         self.__qrcode = __import__("qrcode")
-        self.__Image = Image
-        self.__ImageTK = ImageTk
         self.stop = False
-        self.qrWindowREF = self.__tk.Tk()
+        self.spawnQrWindow = spawnQrWindow
+        if(spawnQrWindow):
+            from PIL import Image, ImageTk
+            self.__tk = __import__("tkinter")
+            self.__Image = Image
+            self.__ImageTK = ImageTk
+            self.qrWindowREF = self.__tk.Tk()
 
-        if sys.platform.startswith("win"):
-            self.qrWindowREF.wm_attributes("-topmost", 1)
-        elif sys.platform.startswith("darwin"):
-            self.qrWindowREF.createcommand('tk::mac::ReopenApplication',
-                            lambda: self.qrWindowREF.event_generate('<<ReopenApplication>>'))
-            self.qrWindowREF.createcommand('tk::mac::Preferences',
-                            lambda: self.qrWindowREF.event_generate('<<Preferences>>'))
-            self.qrWindowREF.createcommand('tk::mac::Quit',
-                            lambda: self.qrWindowREF.event_generate('<<Quit>>'))
-            self.qrWindowREF.createcommand('::tk::mac::ShowPreferences',
-                            lambda: self.qrWindowREF.event_generate('<<ShowPreferences>>'))
-            self.qrWindowREF.createcommand('::tk::mac::ShowHelp',
-                            lambda: self.qrWindowREF.event_generate('<<ShowHelp>>'))
-            self.qrWindowREF.createcommand('::tk::mac::Hide',
-                            lambda: self.qrWindowREF.event_generate('<<Hide>>'))
-        else:
-            # Linux (requires external libraries like python-xlib)
-            self.qrWindowREF.wm_attributes("-topmost", 1)
+            if sys.platform.startswith("win"):
+                self.qrWindowREF.wm_attributes("-topmost", 1)
+            elif sys.platform.startswith("darwin"):
+                self.qrWindowREF.createcommand('tk::mac::ReopenApplication',
+                                lambda: self.qrWindowREF.event_generate('<<ReopenApplication>>'))
+                self.qrWindowREF.createcommand('tk::mac::Preferences',
+                                lambda: self.qrWindowREF.event_generate('<<Preferences>>'))
+                self.qrWindowREF.createcommand('tk::mac::Quit',
+                                lambda: self.qrWindowREF.event_generate('<<Quit>>'))
+                self.qrWindowREF.createcommand('::tk::mac::ShowPreferences',
+                                lambda: self.qrWindowREF.event_generate('<<ShowPreferences>>'))
+                self.qrWindowREF.createcommand('::tk::mac::ShowHelp',
+                                lambda: self.qrWindowREF.event_generate('<<ShowHelp>>'))
+                self.qrWindowREF.createcommand('::tk::mac::Hide',
+                                lambda: self.qrWindowREF.event_generate('<<Hide>>'))
+            else:
+                # Linux (requires external libraries like python-xlib)
+                self.qrWindowREF.wm_attributes("-topmost", 1)
 
-        self.qrWindowREF.overrideredirect(True)
-        self.qrWindowREF.attributes("-toolwindow", 1)
-        self.qrWindowREF.protocol("WM_DELETE_WINDOW", lambda: None)
+            self.qrWindowREF.overrideredirect(True)
+            self.qrWindowREF.attributes("-toolwindow", 1)
+            self.qrWindowREF.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        self.filename = "qrcode.png"
-        self.label = None
+            self.filename = "qrcode.png"
+            self.label = None
 
-        qr = self.__qrcode.QRCode()
-        qr.add_data("ERROR!")
-        qr.make_image().save(self.filename)
-        self.create_qr_image()
+            qr = self.__qrcode.QRCode()
+            qr.add_data("ERROR!")
+            qr.make_image().save(self.filename)
+            self.create_qr_image()
 
     def create_qr_image(self):
         try:
@@ -311,30 +316,59 @@ class QRWindow:
         if(not self.stop):
             self.qrWindowREF.after(1000, self.create_qr_image)
 
-    def updateQR(self):
+    def createTerminalQR(self,data, update:bool):
+        qr = self.__qrcode.QRCode(
+            version=1,
+            error_correction=self.__qrcode.constants.ERROR_CORRECT_L,
+            box_size=1,
+            border=0,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        if(update):
+            sys.stdout.write("\033[s")
+            sys.stdout.write("\033[27A")
+        # qr.print_tty()
+        qr.print_ascii()
+
+    def updateQR(self, qrID):
+        lqrID = qrID
         while not self.stop:
-            qr = self.__qrcode.QRCode()
             try:
-                qr.add_data(driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref"))
+                qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
             except:
                 self.quit()
-            qr.make_image().save(self.filename)
-            logging.info("Updated QR")
+            if(lqrID != qrID):
+                if(self.spawnQrWindow):
+                    qr = self.__qrcode.QRCode()
+                    qr.add_data(qrID)
+                    qr.make_image().save(self.filename)
+                threading.Thread(target = self.createTerminalQR, args=(qrID,True)).start()
+                logging.info("Updated QR")
+                lqrID = qrID
             time.sleep(0.5)
 
     def start(self, qrID):
-        qr = self.__qrcode.QRCode()
-        qr.add_data(qrID)
-        qr.make_image().save(self.filename)
-        logging.info('Starting QRWindow')
-        threading.Thread(target=self.updateQR, daemon=True).start()
-        self.qrWindowREF.mainloop()
+        threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
+        if(self.spawnQrWindow):
+            qr = self.__qrcode.QRCode()
+            qr.add_data(qrID)
+            qr.make_image().save(self.filename)
+            logging.info('Starting QRWindow')
+            threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
+            self.qrWindowREF.mainloop()
+        else:
+            self.updateQR(qrID)
     
     def quit(self):
         self.stop = True
         try:
             self.qrWindowREF.quit()
             logging.info('Quitting QRWindow')
+            sys.stdout.write("\033[27A")
+            for _ in range(27):
+                print(" " * 55)
+            sys.stdout.write("\033[27A\n")
         except:
             pass
 
