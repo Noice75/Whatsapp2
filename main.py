@@ -42,7 +42,7 @@ class initialize:
     def __init__(
         self,
         browser : str = 'Chrome',
-        headless : bool = False,
+        headless : bool = True,
         spawnQrWindow : bool = True,
         terminalQR : bool = True,
         profile : str = "Default",
