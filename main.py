@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 import threading
 import platform
@@ -235,7 +236,7 @@ class startup:
                 break
 
             try:
-                driver.find_element(By.XPATH, xpathData.get('searchfield'))
+                driver.find_element(By.XPATH, xpathData.get('searchBox'))
                 self.stopThreads = True
                 self.isLoggedin = True
                 logging.info("Stopping Startup Thread")
@@ -383,6 +384,45 @@ class QRWindow:
         if(self.spawnQrWindow):
             logging.info('Quitting QRWindow')
             self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
+
+class send:
+    def __init__(self, message : str, waitTillDelivered : bool = False, waitTime : int = 0) -> None:
+        '''
+        Parameters:
+        - message : Message to be sent
+        - waitTillDelivered : Waits till message is delivered
+        - waitTime : Time in Seconds to wait till message is deliverd, 0 to wait forever (default)
+        '''
+        self.__message = message
+        self.__waitTillDelivered = waitTillDelivered
+        self.__waitTime = waitTime
+        self.sentMsgID = None
+        self.send()
+    
+    def send(self):
+        searchBox = driver.find_element(By.XPATH, xpathData.get('chatBox'))
+        searchBox.click()
+        message = self.__message.splitlines()
+        for i in message:
+            if(i == ""):
+                searchBox.send_keys(Keys.SHIFT + Keys.RETURN) #If \n is at start
+            else:
+                searchBox.send_keys(i)
+                searchBox.send_keys(Keys.SHIFT + Keys.RETURN)
+        searchBox.send_keys(Keys.RETURN)
+        self.sentMsgID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
+        if(self.__waitTillDelivered):
+            self.wait()
+
+    def wait(self):
+        while time.time() < time.time() + self.__waitTime or self.__waitTime == 0:
+            try:
+                driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Pending ")}')
+                time.sleep(0.1)
+                continue
+            except:
+                driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Sent ")}')
+                break
 
 def getLink(link : str):
     try:
