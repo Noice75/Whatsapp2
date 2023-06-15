@@ -385,6 +385,38 @@ class QRWindow:
             logging.info('Quitting QRWindow')
             self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
 
+class openChat:
+    def __init__(self, contact : str, new: bool = False) -> None:
+        self.__contact = contact
+        if(new):
+            self.openNew()
+        else:
+            self.open()
+
+    def open(self):
+        searchBox = driver.find_element(By.XPATH, xpathData.get('searchBox'))
+        searchBox.click()
+        searchBox.send_keys(self.__contact)
+        time.sleep(1)
+        try:
+            # driver.find_element(By.XPATH, xpathData.get("searchResult")).click()
+            actions = ActionChains(driver=driver) 
+            actions.send_keys(Keys.TAB * 2)
+            actions.perform()
+            WebDriverWait(driver,1).until(EC.presence_of_element_located((By.XPATH, xpathData.get('chatBox'))))
+        except NoSuchElementException:
+            raise Exception(f"No chat found for {self.__contact}, If you never sent message to this contact use new=True (Use phone number insted of contact name)")
+    
+    def openNew(self):
+        getLink(f'https://web.whatsapp.com/send?phone={self.__contact}')
+        startup(spawnQrWindow=False,terminalQR=False).waitToLoad(waitTime=0)
+        try:
+            WebDriverWait(driver,3).until(EC.presence_of_element_located((By.XPATH, xpathData.get('chatBox'))))
+        except:
+            if(driver.find_element(By.XPATH, xpathData.get("invalidPhoneNumber")).text == "Phone number shared via url is invalid."):
+                raise Exception("Invalid PhoneNumber")
+
+
 class send:
     def __init__(self, message : str, waitTillDelivered : bool = False, waitTime : int = 0) -> None:
         '''
@@ -400,16 +432,16 @@ class send:
         self.send()
     
     def send(self):
-        searchBox = driver.find_element(By.XPATH, xpathData.get('chatBox'))
-        searchBox.click()
+        chatBox = driver.find_element(By.XPATH, xpathData.get('chatBox'))
+        chatBox.click()
         message = self.__message.splitlines()
         for i in message:
             if(i == ""):
-                searchBox.send_keys(Keys.SHIFT + Keys.RETURN) #If \n is at start
+                chatBox.send_keys(Keys.SHIFT + Keys.RETURN) #If \n is at start
             else:
-                searchBox.send_keys(i)
-                searchBox.send_keys(Keys.SHIFT + Keys.RETURN)
-        searchBox.send_keys(Keys.RETURN)
+                chatBox.send_keys(i)
+                chatBox.send_keys(Keys.SHIFT + Keys.RETURN)
+        chatBox.send_keys(Keys.RETURN)
         self.sentMsgID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
         if(self.__waitTillDelivered):
             self.wait()
@@ -421,7 +453,13 @@ class send:
                 time.sleep(0.1)
                 continue
             except:
-                driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Sent ")}')
+                try:
+                    driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Sent ")}')
+                except NoSuchElementException:
+                    try:
+                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Read ")}')
+                    except NoSuchElementException:
+                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Delivered ")}')
                 break
 
 def getLink(link : str):
