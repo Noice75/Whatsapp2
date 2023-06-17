@@ -51,8 +51,9 @@ class initialize:
         customDriver = None,
         profileDir : str = "Default",
         freshStart : bool = False,
-        log : bool = False,
+        log : bool = True,
         logFile : bool = False,
+        logLevel : logging = logging.CRITICAL
     ) -> None:
         '''
         Parameters:
@@ -66,7 +67,8 @@ class initialize:
         - profileDir: Pass the path of the custom chrome profile, Only pass the path if you want to use other directory than chromes default directory
         - freshStart: This will logout from whatsapp and make a new start
         - log: Logs all details to stdout
-        - logFile: Logs to file at root'''
+        - logFile: Logs to file at root
+        - logLevel: Log level (Default Critical)'''
 
         global driver
         driver = customDriver
@@ -78,11 +80,11 @@ class initialize:
         self.profileDir = profileDir
         self.log = log
         self.logFile = logFile
+        self.logLevel = logLevel
         self.user = os.getlogin()
         self.os = sysinfo["System"]
 
         if(log):
-            logLevel = logging.INFO
             if(logFile):
                 logging.basicConfig(filename='Debug.log', format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", filemode="w", encoding='utf-8', level=logLevel)
             else:
