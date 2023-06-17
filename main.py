@@ -6,7 +6,7 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 import threading
@@ -428,10 +428,11 @@ class send:
         self.__message = message
         self.__waitTillDelivered = waitTillDelivered
         self.__waitTime = waitTime
-        self.sentMsgID = None
-        self.send()
+        self.id = None
+        self.__send()
     
-    def send(self):
+    def __send(self):
+        global _LsentID
         chatBox = driver.find_element(By.XPATH, xpathData.get('chatBox'))
         chatBox.click()
         message = self.__message.splitlines()
@@ -442,25 +443,105 @@ class send:
                 chatBox.send_keys(i)
                 chatBox.send_keys(Keys.SHIFT + Keys.RETURN)
         chatBox.send_keys(Keys.RETURN)
-        self.sentMsgID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
+        self.id = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
+        _LsentID = self.id
         if(self.__waitTillDelivered):
-            self.wait()
+            self.__wait()
 
-    def wait(self):
+    def __wait(self):
         while time.time() < time.time() + self.__waitTime or self.__waitTime == 0:
             try:
-                driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Pending ")}')
+                driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.id)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Pending ")}')
                 time.sleep(0.1)
                 continue
             except:
                 try:
-                    driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Sent ")}')
+                    driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.id)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Sent ")}')
                 except NoSuchElementException:
                     try:
-                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Read ")}')
+                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.id)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Read ")}')
                     except NoSuchElementException:
-                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.sentMsgID)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Delivered ")}')
+                        driver.find_element(By.XPATH, f'{xpathData.get("sentMSG").replace("true",self.id)}{xpathData.get("msgStatus").replace("PLACEHOLDER", " Delivered ")}')
                 break
+
+    def __repr__(self) -> str:
+        return self.id
+        
+class __onSend:
+    def __init__(self) -> None:
+        self.id = None
+        self.body = None
+        self.__sentMsg()
+        pass
+
+    def __sentMsg(self):
+        global _LsentID
+        while True:
+            try:
+                sentID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
+            except (NoSuchElementException, StaleElementReferenceException):
+                time.sleep(0.1)
+                continue
+            if(sentID != self.id and _LsentID != sentID):
+                if(self.id == None):
+                    self.id = sentID
+                    continue
+                self.id = sentID
+                try:
+                    self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",sentID)}').text
+                    threading.Thread(target=_onSendCallBackFN, args=(self,)).start()
+                except (NoSuchElementException, StaleElementReferenceException):
+                    time.sleep(0.1)
+                    continue
+            time.sleep(0.1)
+
+def _onSendCallBackFN(self):
+    global __onSendCallBacks
+    for i in __onSendCallBacks:
+        threading.Thread(target=i, args=(self,)).start()
+
+__onSendCallBacks = []
+_LsentID = None
+def onSend(callBack):
+    global __onSendCallBacks
+    __onSendCallBacks.append(callBack)
+    threading.Thread(target=__onSend).start()
+
+class recive:
+    def __init__(self) -> None:
+        self.id = None
+        self.body = None
+        self.__reciveMsg()
+        pass
+    
+    def __reciveMsg(self):
+        while True:
+            try:
+                recivedID = driver.find_element(By.XPATH, f"({xpathData.get('recivedMSG')})[last()]").get_attribute("data-id")
+            except (NoSuchElementException, StaleElementReferenceException):
+                time.sleep(0.1)
+                continue
+            if(recivedID != self.id):
+                self.id = recivedID
+                try:
+                    self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",recivedID)}').text
+                    threading.Thread(target=_onReciveCallBackFN, args=(self,)).start()
+                except (NoSuchElementException, StaleElementReferenceException):
+                    time.sleep(0.1)
+                    continue
+            time.sleep(0.1)
+
+def _onReciveCallBackFN(self):
+    global __onReciveCallBacks
+    for i in __onReciveCallBacks:
+        threading.Thread(target=i, args=(self,)).start()
+
+__onReciveCallBacks = []
+def onRecive(callBack):
+    global __onReciveCallBacks
+    __onReciveCallBacks.append(callBack)
+    threading.Thread(target=recive).start()
+
 
 def getLink(link : str):
     try:
