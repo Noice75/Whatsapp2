@@ -435,6 +435,8 @@ class send:
     
     def __send(self):
         global _LsentID
+        global _pause
+        _pause = True
         chatBox = driver.find_element(By.XPATH, xpathData.get('chatBox'))
         chatBox.click()
         message = self.__message.splitlines()
@@ -447,6 +449,7 @@ class send:
         chatBox.send_keys(Keys.RETURN)
         self.id = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
         _LsentID = self.id
+        _pause = False
         if(self.__waitTillDelivered):
             self.__wait()
 
@@ -478,7 +481,11 @@ class __onSend:
 
     def __sentMsg(self):
         global _LsentID
+        global _pause
         while True:
+            if(_pause):
+                time.sleep(0.1)
+                continue
             try:
                 sentID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException):
@@ -504,6 +511,7 @@ def _onSendCallBackFN(self):
 
 __onSendCallBacks = []
 _LsentID = None
+_pause = False
 def onSend(callBack):
     global __onSendCallBacks
     __onSendCallBacks.append(callBack)
