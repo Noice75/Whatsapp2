@@ -387,6 +387,17 @@ class QRWindow:
             logging.info('Quitting QRWindow')
             self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
 
+def getLink(link : str):
+    try:
+        driver.get(link)
+    except WebDriverException:
+        logging.critical("DNS ERROR, Webpage Down")
+        raise Exception("DNS ERROR, Webpage Down")
+
+def quit():
+    logging.info("Quitting!")
+    driver.quit()
+
 class openChat:
     def __init__(self, contact : str, new: bool = False) -> None:
         self.__contact = contact
@@ -580,10 +591,6 @@ def onSend(callBack):
         __onSendThread = threading.Thread(target=__onSend)
         __onSendThread.start()
 
-class recive:
-    def __init__(self) -> None:
-        pass
-
 class getRecived:
     def __init__(self) -> None:
         self.id = None
@@ -683,20 +690,3 @@ def onRecive(callBack):
     if(__reciveThread == None or not __reciveThread.is_alive()):
         __reciveThread = threading.Thread(target=__onRecive)
         __reciveThread.start()
-
-def getLink(link : str):
-    try:
-        driver.get(link)
-    except WebDriverException:
-        logging.critical("DNS ERROR, Webpage Down")
-        raise Exception("DNS ERROR, Webpage Down")
-
-def quit():
-    logging.info("Quitting!")
-    driver.quit()
-
-def onLoad(funRef):
-    funRef()
-
-if __name__ == "__main__":
-    initialize(headless=True, log=True, logFile=True)
