@@ -1,4 +1,3 @@
-import threading
 import inspect
 import os
 
@@ -23,7 +22,7 @@ class command:
             else:
                 extension_dict__[fileName][alias] = func
 
-        threading.Thread(target=build_commands__).start()
+        build_commands__()
         return func
 
 def build_commands__():

@@ -5,7 +5,7 @@ setup(
     version='1.0',
     description='Controll whatsapp web',
     packages=['whatsapp'],
-    package_data={'whatsapp': ['xpath.json']},
+    package_data={'whatsapp': ['xpath.json','commands/*']},
     install_requires=[
         'selenium',
         'webdriver_manager',

@@ -11,6 +11,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 import threading
 import platform
+import inspect
 import shutil
 import logging
 import time
@@ -83,6 +84,10 @@ class initialize:
         self.logLevel = logLevel
         self.user = os.getlogin()
         self.os = sysinfo["System"]
+        self.ready = False
+        self.spawnQrWindow = spawnQrWindow
+        self.terminalQR = terminalQR
+        self.waitTime = waitTime
 
         if(log):
             if(logFile):
@@ -93,8 +98,10 @@ class initialize:
         if(freshStart):
             self.clean()
 
-        self._initializeDriverPreference()
-        startup(spawnQrWindow=spawnQrWindow, terminalQR=terminalQR).waitToLoad(waitTime=waitTime)
+        self.startupThread = threading.Thread(target=self._initializeDriverPreference)
+        self.startupThread.start()
+        threading.Thread(target=self.onReady).start()
+
         pass
 
     def _initializeDriverPreference(self):
@@ -127,6 +134,8 @@ class initialize:
         else:
             logging.warning("Invalid Driver!")
             raise Exception("Driver Error! / Invalid Driver!")
+        
+        startup(spawnQrWindow=self.spawnQrWindow, terminalQR=self.terminalQR).waitToLoad(waitTime=self.waitTime)
 
     def _initializeDriver(self):
         if(self.driver == None and self.os != None and self.browser != None):
@@ -183,6 +192,13 @@ class initialize:
                 shutil.rmtree(rf"{dir}/dependences/ChromeProfile/Default")
             except OSError as e:
                 print("Error: %s - %s." % (e.filename, e.strerror))
+
+    def onReady(self):
+        global _onReadyCallBackFN
+        while self.startupThread.is_alive():
+            time.sleep(0.5)
+            continue
+        _onReadyCallBackFN()
 
 class startup:
     def __init__(self, spawnQrWindow : bool, terminalQR : bool) -> None:
@@ -387,6 +403,16 @@ class QRWindow:
             logging.info('Quitting QRWindow')
             self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
 
+__onReadyCallBacks = []
+def onReady(callBack):
+    global __onReadyCallBacks
+    __onReadyCallBacks.append(callBack)
+
+def _onReadyCallBackFN():
+    global __onReadyCallBacks
+    for i in __onReadyCallBacks:
+        threading.Thread(target=i).start()
+
 def getLink(link : str):
     try:
         driver.get(link)
@@ -493,7 +519,7 @@ class getSent:
     def __getSent(self):
         try:
             sentID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
-        except (NoSuchElementException, StaleElementReferenceException):
+        except (NoSuchElementException, StaleElementReferenceException, AttributeError):
             raise Exception(f"Maybe no chat opend ?! Error!")
             
         if(sentID != self.id):
@@ -522,7 +548,7 @@ class waitToSend:
         while time.time() < time.time() + self.__waitTime or self.__waitTime == 0:
             try:
                 sentID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
-            except (NoSuchElementException, StaleElementReferenceException):
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
             if(sentID != self.id):
@@ -561,7 +587,7 @@ class __onSend:
                 continue
             try:
                 sentID = driver.find_element(By.XPATH, f"({xpathData.get('sentMSG')})[last()]").get_attribute("data-id")
-            except (NoSuchElementException, StaleElementReferenceException):
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
             if(sentID != self.id and _LsentID != sentID):
@@ -601,7 +627,7 @@ class getRecived:
     def __getRecived(self):
         try:
             recivedID = driver.find_element(By.XPATH, f"({xpathData.get('recivedMSG')})[last()]").get_attribute("data-id")
-        except (NoSuchElementException, StaleElementReferenceException):
+        except (NoSuchElementException, StaleElementReferenceException, AttributeError):
             raise Exception(f"Maybe no chat opend ?! Error!")
             
         if(recivedID != self.id):
@@ -630,7 +656,7 @@ class waitToRecive:
         while time.time() < time.time() + self.__waitTime or self.__waitTime == 0:
             try:
                 recivedID = driver.find_element(By.XPATH, f"({xpathData.get('recivedMSG')})[last()]").get_attribute("data-id")
-            except (NoSuchElementException, StaleElementReferenceException):
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
             if(recivedID != self.id):
@@ -660,7 +686,7 @@ class __onRecive:
         while True:
             try:
                 recivedID = driver.find_element(By.XPATH, f"({xpathData.get('recivedMSG')})[last()]").get_attribute("data-id")
-            except (NoSuchElementException, StaleElementReferenceException):
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
             if(recivedID != self.id):
@@ -690,3 +716,120 @@ def onRecive(callBack):
     if(__reciveThread == None or not __reciveThread.is_alive()):
         __reciveThread = threading.Thread(target=__onRecive)
         __reciveThread.start()
+
+class wait_for_message:
+    def __init__(self, waitTime : int = 0) -> None:
+        '''
+        Parameters:
+        - waitTime : Time in Seconds to wait till message is recived, 0 to wait forever (default)
+        '''
+        self.id = None
+        self.body = None
+        self.__waitTime = waitTime
+        self.__wait()
+        pass
+    
+    def __wait(self):
+        while time.time() < time.time() + self.__waitTime or self.__waitTime == 0:
+            try:
+                msgID = driver.find_element(By.XPATH, f"({xpathData.get('msg')})[last()]").get_attribute("data-id")
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
+                time.sleep(0.1)
+                continue
+            if(msgID != self.id):
+                if(self.id == None):
+                    self.id = msgID
+                    continue
+                self.id = msgID
+                try:
+                    self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",msgID)}').text
+                    break
+                except (NoSuchElementException, StaleElementReferenceException):
+                    time.sleep(0.1)
+                    continue
+            time.sleep(0.1)
+
+    def __repr__(self) -> str:
+        return self
+
+class __onMessage:
+    def __init__(self) -> None:
+        self.id = None
+        self.body = None
+        self.__getMsg()
+        pass
+    
+    def __getMsg(self):
+        while True:
+            try:
+                msgID = driver.find_element(By.XPATH, f"({xpathData.get('msg')})[last()]").get_attribute("data-id")
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
+                time.sleep(0.1)
+                continue
+            if(msgID != self.id):
+                if(self.id == None):
+                    self.id = msgID
+                    continue
+                self.id = msgID
+                try:
+                    self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",msgID)}').text
+                    threading.Thread(target=_onMsgCallBackFN, args=(self,)).start()
+                except (NoSuchElementException, StaleElementReferenceException):
+                    time.sleep(0.1)
+                    continue
+            time.sleep(0.1)
+
+def _onMsgCallBackFN(self):
+    global __onMsgCallBacks
+    for i in __onMsgCallBacks:
+        threading.Thread(target=i, args=(self,)).start()
+
+__onMsgCallBacks = []
+__msgThread = None
+def onMessage(callBack):
+    global __onMsgCallBacks
+    global __msgThread
+    __onMsgCallBacks.append(callBack)
+    if(__msgThread == None or not __msgThread.is_alive()):
+        __msgThread = threading.Thread(target=__onMessage)
+        __msgThread.start()
+
+extension_dict__ = {}
+commands__ = {}
+
+class command:
+    def __init__(self, aliases: list = []):
+        self.aliases = aliases
+
+    def __call__(self, func):
+        global extension_dict__
+        fileName = os.path.basename(inspect.getfile(func))[:-3]
+        
+        if fileName not in extension_dict__:
+            extension_dict__[fileName] = {}
+
+        extension_dict__[fileName][func.__name__] = func
+        for alias in self.aliases:
+            if alias in extension_dict__[fileName].keys():
+                raise Exception(f"Duplicate alias '{alias}' in commands {func.__name__} and {extension_dict__[fileName][alias].__name__}")
+            else:
+                extension_dict__[fileName][alias] = func
+
+        build_commands__()
+        return func
+
+def build_commands__():
+    global extension_dict__, commands__
+    commands__ = {}
+    for file_commands in extension_dict__.values():
+        for command_name, command_func in file_commands.items():
+            if command_name in commands__:
+                raise Exception(f"Duplicate alias '{command_name}' in commands {command_func.__name__} and {commands__[command_name].__name__}")
+            else:
+                commands__[command_name] = command_func
+
+@onMessage
+def __start_command(ctx):
+    if ctx.body in commands__:
+        commands__[ctx.body](ctx)
+    
