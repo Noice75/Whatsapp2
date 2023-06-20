@@ -3,13 +3,18 @@ from setuptools import setup
 setup(
     name='whatsapp',
     version='1.0',
-    description='Controll whatsapp web',
+    description='Control WhatsApp Web',
     packages=['whatsapp'],
-    package_data={'whatsapp': ['xpath.json','commands/*']},
+    package_data={'whatsapp': ['xpath.json', 'extension.py', '__init__.py']},
     install_requires=[
         'selenium',
         'webdriver_manager',
         'qrcode',
         'Pillow'
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'whatsapp-control = whatsapp.main:main',
+        ],
+    },
 )
