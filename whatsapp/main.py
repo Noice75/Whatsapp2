@@ -870,5 +870,6 @@ def unload_extension(extension_name):
 
 @onMessage
 def __start_command(ctx):
-    if ctx.body in commands__:
-        commands__[ctx.body](ctx)
+    cmd = ctx.body.split()[0]
+    if cmd in commands__:
+        commands__[cmd](ctx)
