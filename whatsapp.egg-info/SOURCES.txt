@@ -1,6 +1,5 @@
 setup.py
 whatsapp/__init__.py
-whatsapp/extension.py
 whatsapp/main.py
 whatsapp/xpath.json
 whatsapp.egg-info/PKG-INFO
@@ -9,3 +8,6 @@ whatsapp.egg-info/dependency_links.txt
 whatsapp.egg-info/entry_points.txt
 whatsapp.egg-info/requires.txt
 whatsapp.egg-info/top_level.txt
+whatsapp/commands/__init__.py
+whatsapp/commands/commands.py
+whatsapp/commands/extension.py
