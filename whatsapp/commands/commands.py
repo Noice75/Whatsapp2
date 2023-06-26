@@ -5,7 +5,7 @@ from . import extension
 cmdD = {}
 cc = {}
 
-class decorator:
+class command:
     def __init__(self, aliases: list = []):
         self.aliases = aliases
         self.func = None
@@ -55,12 +55,21 @@ def load_extension(extension_path):
     testcmd, testcc= extension.load_extension(cmdD,extension_path=extension_path)
     if(testcmd != None and testcc != None):
         cmdD, cc = testcmd, testcc
+        return True
+    else:
+        return False
 
 def unload_extension(extension_name):
     global cmdD, cc
     testcmd,testcc = extension.unload_extension(cmdD,extension_name=extension_name)
     if(testcmd != None and testcc != None):
         cmdD, cc = testcmd, testcc
+        return True
+    else:
+        return False
 
 def setup_extension(classes : list = []):
     extension.setup_extension().setup_extension(classes=classes)
+
+def get_commands():
+    return cc

@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
+from . import commands
 import threading
 import platform
 import shutil
@@ -36,7 +37,7 @@ sysinfo = {
 "Processor" : system.processor
 }
 
-class initialize:
+class run:
     '''
     An unofficial Python wrapper for Whatsapp
     '''
@@ -48,6 +49,7 @@ class initialize:
         terminalQR : bool = True,
         profile : str = "Default",
         waitTime : int = 0,
+        command_classes : list = [],
         customDriver = None,
         profileDir : str = "Default",
         freshStart : bool = False,
@@ -63,6 +65,7 @@ class initialize:
         - terminalQR : Outputs Whatsapp login qrcode to terminal,
         - profile: Select the chrome/firefox profile where Whatsapp is already loggedin, Profile name can be found at this link `chrome://version/`
         - waitTime: Time to wait for whatsapp to load before session timeout, Make waitTime = 0 if you want to wait forever
+        - command_classes: Class having commands should be passed in list 
         - customDriver: Pass the selenium webdriver if you dont want to use default settings provided by this module
         - profileDir: Pass the path of the custom chrome profile, Only pass the path if you want to use other directory than chromes default directory
         - freshStart: This will logout from whatsapp and make a new start
@@ -87,6 +90,7 @@ class initialize:
         self.spawnQrWindow = spawnQrWindow
         self.terminalQR = terminalQR
         self.waitTime = waitTime
+        self.command_classes = command_classes
 
         if(log):
             if(logFile):
@@ -100,7 +104,7 @@ class initialize:
         self.startupThread = threading.Thread(target=self._initializeDriverPreference)
         self.startupThread.start()
         threading.Thread(target=self.onReady).start()
-
+        commands.setup_extension(classes=self.command_classes)
         pass
 
     def _initializeDriverPreference(self):
@@ -816,12 +820,12 @@ def onMessage(callBack):
         __msgThread = threading.Thread(target=__onMessage)
         __msgThread.start()
 
-from . import commands
 @onMessage
-def __start_command(ctx):
+def __command_manager__(ctx):
+    cc = commands.get_commands()
     cmd = ctx.body.split()[0]
-    if cmd in commands.cc:
-        if(type(commands.cc[cmd]) == "<class 'tuple'>"): 
-            commands.cc[cmd][0](commands.cc[cmd][1])
+    if cmd in cc:
+        if(isinstance(cc[cmd], tuple)): 
+            cc[cmd][0](cc[cmd][1],ctx)
         else:
-            commands.cc[cmd](ctx)
+            cc[cmd](ctx)
