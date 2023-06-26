@@ -822,10 +822,10 @@ def onMessage(callBack):
 
 @onMessage
 def __command_manager__(ctx):
-    cc = commands.get_commands()
+    built_commands = commands.get_commands()
     cmd = ctx.body.split()[0]
-    if cmd in cc:
-        if(isinstance(cc[cmd], tuple)): 
-            cc[cmd][0](cc[cmd][1],ctx)
+    if cmd in built_commands:
+        if(isinstance(built_commands[cmd], tuple)): 
+            built_commands[cmd][0](built_commands[cmd][1],ctx)
         else:
-            cc[cmd](ctx)
+            built_commands[cmd](ctx)
