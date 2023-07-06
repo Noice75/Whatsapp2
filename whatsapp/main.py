@@ -12,6 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from . import commands
 import threading
 import platform
+import getpass
 import shutil
 import logging
 import time
@@ -84,13 +85,16 @@ class run:
         self.log = log
         self.logFile = logFile
         self.logLevel = logLevel
-        self.user = os.getlogin()
+        self.user = getpass.getuser()
         self.os = sysinfo["System"]
         self.ready = False
         self.spawnQrWindow = spawnQrWindow
         self.terminalQR = terminalQR
         self.waitTime = waitTime
         self.command_classes = command_classes
+
+        if(self.os == "Linux"):
+            self.spawnQrWindow = False
 
         if(log):
             if(logFile):
@@ -187,6 +191,47 @@ class run:
             self.driver = driver
 
             logging.info("Driver Initialized!")
+        
+        elif(self.driver == None and self.os == "Linux" and self.browser == "chrome"):
+            chrome_options = Options()
+            chrome_options.add_argument(f"user-agent={xpathData.get('userAgent_Chrome')}")
+
+            if(self.profileDir == "Default" and self.profile != "Default"):
+                chrome_options.add_argument(f"user-data-dir=/home/{self.user}/.config/google-chrome")
+                chrome_options.add_argument(f"profile-directory={self.profile}")
+
+            elif(self.profileDir != "Default"):
+                chrome_options.add_argument(f"user-data-dir={self.profileDir}")
+                chrome_options.add_argument(f"profile-directory={self.profile}")
+
+            elif(self.profileDir == "Default" and self.profile == "Default"):
+                chrome_options.add_argument(f"user-data-dir={dir}/dependences/ChromeProfile")
+                chrome_options.add_argument(f"profile-directory={self.profile}")
+
+            if(self.headless):
+                chrome_options.add_argument("--start-maximized")
+                chrome_options.add_argument("--window-size=1920,1080")
+                chrome_options.add_argument("--headless")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-gpu")
+
+            chrome_options.add_argument("--disable-extensions")
+            chrome_options.add_argument("disable-infobars")
+            chrome_options.add_argument("--log-level=3")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--max-connections=5")
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+
+            chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+            chrome_options.add_experimental_option("detach", True)
+
+            # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+            driver = webdriver.Chrome(options=chrome_options)
+            self.driver = driver
+
+            logging.info("Driver Initialized!")
 
     def clean(self):
         logging.info("Fresh start!")
@@ -224,12 +269,13 @@ class startup:
         while time.time() < t or waitTime == 0:
             if(self.stopThreads):
                 if(self.wasLoggedOut):
-                    if(not self.QRWindow.stop):
+                    if(self.QRWindow != None and not self.QRWindow.stop):
                         self.QRWindow.quit()
 
                     self.QRWindow = None
+                    print("RESTARTING after login")
                     driver.refresh()
-                    quit()
+                    # quit()
                     
                     if(os.path.exists(f"qrcode.png")):
                         try:
@@ -237,8 +283,18 @@ class startup:
                         except OSError as e:
                             print("Error: %s - %s." % (e.filename, e.strerror))
 
-                    print("RESTART needed after login")
-                    exit()
+                    print("Waiting for Whatsapp.web to respond")
+                    # exit()
+                    while True:
+                        try:
+                            driver.find_element(By.XPATH, xpathData.get('searchBox'))
+                            logging.info("Stopping Startup Thread")
+                            logging.info(f"Is LoggedIn = {self.isLoggedin}")
+                            break
+                        except NoSuchElementException:
+                            time.sleep(0.1)
+                            continue
+                    break
                 else:
                     break
             time.sleep(0.5)
@@ -266,9 +322,9 @@ class startup:
             except NoSuchElementException:
                 try:
                     qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
-                    self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
                     logging.warning("Not Loggedin!")
-                    print("Not Loggedin!")
+                    print("Not Loggedin, Waiting for Whatsapp.web to generate QRCODE")
+                    self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
                     self.isLoggedin = False
                     self.wasLoggedOut = True
                     self.QRWindow.start(qrID=qrID)
@@ -360,6 +416,7 @@ class QRWindow:
                 qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
             except:
                 self.quit()
+                break
             if(lqrID != qrID):
                 if(self.spawnQrWindow):
                     qr = self.__qrcode.QRCode()
@@ -371,6 +428,7 @@ class QRWindow:
 
                 lqrID = qrID
             time.sleep(0.5)
+        return
 
     def start(self, qrID):
         if(self.spawnQrWindow == True and self.terminalQR == True):
@@ -380,19 +438,19 @@ class QRWindow:
             self.create_qr_image()
             logging.info('Starting QRWindow')
             threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
-            threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
+            threading.Thread(target=self.updateQR, args=(qrID,)).start()
             self.qrWindowREF.mainloop()
 
-        if(self.terminalQR == True and self.spawnQrWindow == False):
+        elif(self.terminalQR == True and self.spawnQrWindow == False):
             threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
             self.updateQR(qrID)
 
-        if(self.spawnQrWindow == True and self.terminalQR == False):
+        elif(self.spawnQrWindow == True and self.terminalQR == False):
             qr = self.__qrcode.QRCode()
             qr.add_data(qrID)
             qr.make_image().save(self.filename)
             logging.info('Starting QRWindow')
-            threading.Thread(target=self.updateQR, args=(qrID,), daemon=True).start()
+            threading.Thread(target=self.updateQR, args=(qrID,)).start()
             self.qrWindowREF.mainloop()
     
     def quit(self):
@@ -402,9 +460,11 @@ class QRWindow:
             for _ in range(27):
                 print(" " * 55)
             sys.stdout.write("\033[27A\n")
+        print("Cleaning UP")
         if(self.spawnQrWindow):
             logging.info('Quitting QRWindow')
-            self.qrWindowREF.destroy() #ErrorMethod to force quit, Exceptions Handled
+            self.qrWindowREF.withdraw()
+            self.qrWindowREF.quit()
 
 __onReadyCallBacks = []
 def onReady(callBack):
