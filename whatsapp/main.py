@@ -225,7 +225,6 @@ class run:
             chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
-            chrome_options.add_experimental_option("detach", True)
 
             # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
             driver = webdriver.Chrome(options=chrome_options)
