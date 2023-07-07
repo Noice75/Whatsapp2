@@ -8,6 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
 from . import commands
 import threading
 import platform
@@ -109,11 +111,9 @@ class run:
         if(freshStart):
             self.clean()
 
-        self.startupThread = threading.Thread(target=self._initializeDriverPreference)
-        self.startupThread.start()
-        threading.Thread(target=self.onReady).start()
-        commands.setup_extension(classes=self.command_classes)
-        pass
+        threading.Thread(target=commands.setup_extension, args=(self.command_classes,), daemon=True).start()
+        self._initializeDriverPreference()
+        self.onReady()
 
     def _initializeDriverPreference(self):
         self.browser = self.browser.lower()
@@ -191,6 +191,7 @@ class run:
             chrome_options.add_experimental_option('useAutomationExtension', False)
 
             driver = webdriver.Chrome(options=chrome_options)
+            # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
             self.driver = driver
 
             logging.info("Driver Initialized!")
@@ -244,10 +245,8 @@ class run:
 
     def onReady(self):
         global _onReadyCallBackFN
-        while self.startupThread.is_alive():
-            time.sleep(0.5)
-            continue
-        _onReadyCallBackFN()
+        if(self.driver != None):
+            _onReadyCallBackFN()
 
 class startup:
     def __init__(self, spawnQrWindow : bool, terminalQR : bool) -> None:
@@ -274,9 +273,9 @@ class startup:
                         self.QRWindow.quit()
 
                     self.QRWindow = None
-                    print("RESTARTING after login")
-                    driver.refresh()
-                    # quit()
+                    print("Waiting for Whatsapp.web to store cache")
+                    driver.refresh() #Refresh to ensure whatsapp keeps logged in
+                    quit() #Quitting safely to ensure whatsapp is logged in
                     
                     if(os.path.exists(f"qrcode.png")):
                         try:
@@ -284,18 +283,19 @@ class startup:
                         except OSError as e:
                             print("Error: %s - %s." % (e.filename, e.strerror))
 
-                    print("Waiting for Whatsapp.web to respond")
-                    # exit()
-                    while True:
-                        try:
-                            driver.find_element(By.XPATH, xpathData.get('searchBox'))
-                            logging.info("Stopping Startup Thread")
-                            logging.info(f"Is LoggedIn = {self.isLoggedin}")
-                            break
-                        except NoSuchElementException:
-                            time.sleep(0.1)
-                            continue
-                    break
+                    print("Restart needed after login")
+
+                    exit()
+                    # while True:
+                    #     try:
+                    #         driver.find_element(By.XPATH, xpathData.get('searchBox'))
+                    #         logging.info("Stopping Startup Thread")
+                    #         logging.info(f"Is LoggedIn = {self.isLoggedin}")
+                    #         break
+                    #     except NoSuchElementException:
+                    #         time.sleep(0.1)
+                    #         continue
+                    # break
                 else:
                     break
             time.sleep(0.5)
@@ -677,9 +677,6 @@ def onSend(callBack):
     global __onSendCallBacks
     global __onSendThread
     __onSendCallBacks.append(callBack)
-    if(__onSendThread == None or not __onSendThread.is_alive()):
-        __onSendThread = threading.Thread(target=__onSend)
-        __onSendThread.start()
 
 class getRecived:
     def __init__(self) -> None:
@@ -777,9 +774,6 @@ def onRecive(callBack):
     global __onReciveCallBacks
     global __reciveThread
     __onReciveCallBacks.append(callBack)
-    if(__reciveThread == None or not __reciveThread.is_alive()):
-        __reciveThread = threading.Thread(target=__onRecive)
-        __reciveThread.start()
 
 class getMessage:
     def __init__(self) -> None:
@@ -877,9 +871,6 @@ def onMessage(callBack):
     global __onMsgCallBacks
     global __msgThread
     __onMsgCallBacks.append(callBack)
-    if(__msgThread == None or not __msgThread.is_alive()):
-        __msgThread = threading.Thread(target=__onMessage)
-        __msgThread.start()
 
 @onMessage
 def __command_manager__(ctx):
@@ -890,3 +881,19 @@ def __command_manager__(ctx):
             built_commands[cmd][0](built_commands[cmd][1],ctx)
         else:
             built_commands[cmd](ctx)
+
+@onReady
+def __setup__():
+    global __msgThread, __onSendThread, __reciveThread
+
+    if(__onSendCallBacks != []):
+        __onSendThread = threading.Thread(target=__onSend)
+        __onSendThread.start()
+
+    if(__onReciveCallBacks != []):
+        __reciveThread = threading.Thread(target=__onRecive)
+        __reciveThread.start()
+
+    if(__onMsgCallBacks != []):
+        __msgThread = threading.Thread(target=__onMessage)
+        __msgThread.start()
