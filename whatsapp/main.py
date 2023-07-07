@@ -5,16 +5,16 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
-from webdriver_manager.chrome import ChromeDriverManager
 from . import commands
 import threading
 import platform
+import urllib3
 import getpass
-import shutil
 import logging
+import shutil
 import time
 import json
 import sys
@@ -102,6 +102,10 @@ class run:
             else:
                 logging.basicConfig(format="%(levelno)s:%(asctime)s:%(levelname)s:%(message)s", level=logLevel)
 
+            selenium_logger.setLevel(logging.CRITICAL)
+            urllib3_logger = logging.getLogger("urllib3")
+            urllib3_logger.setLevel(logging.CRITICAL)
+
         if(freshStart):
             self.clean()
 
@@ -185,9 +189,8 @@ class run:
             chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
-            chrome_options.add_experimental_option("detach", True)
 
-            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+            driver = webdriver.Chrome(options=chrome_options)
             self.driver = driver
 
             logging.info("Driver Initialized!")
@@ -226,7 +229,6 @@ class run:
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
 
-            # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
             driver = webdriver.Chrome(options=chrome_options)
             self.driver = driver
 
