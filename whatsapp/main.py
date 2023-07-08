@@ -49,14 +49,14 @@ class run:
         self,
         browser : str = 'Chrome',
         headless : bool = True,
-        spawnQrWindow : bool = True,
-        terminalQR : bool = True,
+        spawn_qrwindow : bool = True,
+        terminal_qr : bool = True,
         profile : str = "Default",
         waitTime : int = 0,
         command_classes : list = [],
         customDriver = None,
         profileDir : str = "Default",
-        freshStart : bool = False,
+        clean_start : bool = False,
         log : bool = True,
         logFile : bool = False,
         logLevel : logging = logging.CRITICAL
@@ -71,12 +71,12 @@ class run:
         mode or not. Headless mode means that the browser will run without a graphical user interface,
         which can be useful for running automated tests or scraping data from websites, defaults to True
         :type headless: bool (optional)
-        :param spawnQrWindow: A boolean value indicating whether to spawn a separate window to display
+        :param spawn_qrwindow: A boolean value indicating whether to spawn a separate window to display
         the QR code for logging in, defaults to True
-        :type spawnQrWindow: bool (optional)
-        :param terminalQR: A boolean value indicating whether to display the QR code in the terminal or
+        :type spawn_qrwindow: bool (optional)
+        :param terminal_qr: A boolean value indicating whether to display the QR code in the terminal or
         not. If set to True, the QR code will be displayed in the terminal, defaults to True
-        :type terminalQR: bool (optional)
+        :type terminal_qr: bool (optional)
         :param profile: The `profile` parameter is used to specify the profile directory to be used by
         the browser. By default, it is set to "Default", which means the default profile directory will
         be used. However, you can specify a different profile directory if needed, defaults to Default
@@ -96,10 +96,10 @@ class run:
         the default profile directory for the browser. However, you can specify a different directory if
         needed, defaults to Default
         :type profileDir: str (optional)
-        :param freshStart: The `freshStart` parameter is a boolean flag that determines whether the
-        browser should start with a fresh profile or not. If `freshStart` is set to `True`, the browser
+        :param clean_start: The `clean_start` parameter is a boolean flag that determines whether the
+        browser should start with a fresh profile or not. If `clean_start` is set to `True`, the browser
         will start with a new profile, discarding any existing user data, defaults to False
-        :type freshStart: bool (optional)
+        :type clean_start: bool (optional)
         :param log: A boolean value indicating whether or not to enable logging, defaults to True
         :type log: bool (optional)
         :param logFile: A boolean value indicating whether to log the output to a file or not, defaults
@@ -124,13 +124,13 @@ class run:
         self.user = getpass.getuser()
         self.os = sysinfo["System"]
         self.ready = False
-        self.spawnQrWindow = spawnQrWindow
-        self.terminalQR = terminalQR
+        self.spawn_qrwindow = spawn_qrwindow
+        self.terminal_qr = terminal_qr
         self.waitTime = waitTime
         self.command_classes = command_classes
 
         if(self.os == "Linux"):
-            self.spawnQrWindow = False
+            self.spawn_qrwindow = False
 
         if(log):
             if(logFile):
@@ -142,14 +142,14 @@ class run:
             urllib3_logger = logging.getLogger("urllib3")
             urllib3_logger.setLevel(logging.CRITICAL)
 
-        if(freshStart):
-            self.clean()
+        if(clean_start):
+            self.__clean_start__()
 
-        threading.Thread(target=commands.setup_extension, args=(self.command_classes,), daemon=True).start()
-        self._initializeDriverPreference()
-        self.onReady()
+        threading.Thread(target=commands.setup_extension, args=(self.command_classes,), daemon=True).start() #Sets up all the commands inside classes
+        self.__setup_driver_preference__()
+        self.__on_ready__()
 
-    def _initializeDriverPreference(self):
+    def __setup_driver_preference__(self):
         self.browser = self.browser.lower()
         if(self.browser == None and self.driver == None):
             logging.warning("No Browser Defined!")
@@ -161,35 +161,36 @@ class run:
 
         if(self.driver == None):
             if(sysinfo["System"] == "Windows"):
-                self._initializeDriver()
-                getLink("https://web.whatsapp.com/")
+                self.__initialize_driver__()
+                get_link("https://web.whatsapp.com/")
                 
             elif(sysinfo["System"] == "Linux"):
-                self._initializeDriver()
-                getLink("https://web.whatsapp.com/")
+                self.__initialize_driver__()
+                get_link("https://web.whatsapp.com/")
 
             else:
                 raise Exception("UnSupported OS")
 
         elif(str(type(self.driver)) == "<class 'selenium.webdriver.chrome.webdriver.WebDriver'>"):
             logging.info("Using Custom Driver!")
-            self._initializeDriver()
-            getLink("https://web.whatsapp.com/")
+            self.__initialize_driver__()
+            get_link("https://web.whatsapp.com/")
 
         else:
             logging.warning("Invalid Driver!")
             raise Exception("Driver Error! / Invalid Driver!")
         
-        startup(spawnQrWindow=self.spawnQrWindow, terminalQR=self.terminalQR).waitToLoad(waitTime=self.waitTime)
-
-    def _initializeDriver(self):
+        startup_checks(spawn_qrwindow=self.spawn_qrwindow, terminal_qr=self.terminal_qr).wait_to_load(waitTime=self.waitTime)
         if(self.driver == None and self.os != None and self.browser != None):
-            logging.info(f"Initializing Driver for {self.os},{self.browser},Headless={self.headless}")
+            
             self._defaultDriver()
 
-    def _defaultDriver(self):
+    def __initialize_driver__(self):
         global driver
 
+        logging.info(f"Initializing Driver for {self.os},{self.browser},Headless={self.headless}")
+
+        #Driver setup for Windows
         if(self.driver == None and self.os == "Windows" and self.browser == "chrome"):
             chrome_options = Options()
             chrome_options.add_argument(f"user-agent={xpathData.get('userAgent_Chrome')}")
@@ -225,11 +226,11 @@ class run:
             chrome_options.add_experimental_option('useAutomationExtension', False)
 
             driver = webdriver.Chrome(options=chrome_options)
-            # driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
             self.driver = driver
 
             logging.info("Driver Initialized!")
         
+        #Driver setup for Linux
         elif(self.driver == None and self.os == "Linux" and self.browser == "chrome"):
             chrome_options = Options()
             chrome_options.add_argument(f"user-agent={xpathData.get('userAgent_Chrome')}")
@@ -268,45 +269,49 @@ class run:
             self.driver = driver
 
             logging.info("Driver Initialized!")
+        
+        else:
+            logging.CRITICAL("Unsupported Operating System")
+            raise Exception("Unsupported Operating System")
 
-    def clean(self):
-        logging.info("Fresh start!")
+    def __clean_start__(self):
+        logging.info("Clean Start")
         if(os.path.exists(f"{dir}/dependences/ChromeProfile/Default")):
             try:
                 shutil.rmtree(rf"{dir}/dependences/ChromeProfile/Default")
             except OSError as e:
                 print("Error: %s - %s." % (e.filename, e.strerror))
 
-    def onReady(self):
-        global _onReadyCallBackFN
+    def __on_ready__(self):
+        global __on_ready_callbacks__
         if(self.driver != None):
-            _onReadyCallBackFN()
+            for i in __on_ready_callbacks__:
+                threading.Thread(target=i).start()
 
-class startup:
-    def __init__(self, spawnQrWindow : bool, terminalQR : bool) -> None:
-        self.stopThreads = False
-        self.checkLoginThread = None
-        self.isLoggedin = False
-        self.wasLoggedOut = False
-        self.QRWindow = None
-        self.spawnQrWindow = spawnQrWindow
-        self.terminalQR = terminalQR
+class startup_checks:
+    def __init__(self, spawn_qrwindow : bool, terminal_qr : bool) -> None:
+        self.stop_threads = False
+        self.login_check_thread = None
+        self.is_loggedin = False
+        self.was_loggedout = False
+        self.qr_manager = None
+        self.spawn_qrwindow = spawn_qrwindow
+        self.terminal_qr = terminal_qr
         pass
 
-    def waitToLoad(self, waitTime : int):
+    def wait_to_load(self, waitTime : int):
 
-        self.checkLoginThread = threading.Thread(target=self.checkLogin, daemon=True)
-        self.checkLoginThread.start()
-        logging.info(f"CheckLogin Thread Started!, is_Alive? = {self.checkLoginThread.is_alive()}")
+        self.login_check_thread = threading.Thread(target=self.login_check, daemon=True)
+        self.login_check_thread.start()
+        logging.info(f"login_check Thread Started!, is_Alive? = {self.login_check_thread.is_alive()}")
 
-        t = time.time() + waitTime
-        while time.time() < t or waitTime == 0:
-            if(self.stopThreads):
-                if(self.wasLoggedOut):
-                    if(self.QRWindow != None and not self.QRWindow.stop):
-                        self.QRWindow.quit()
+        while time.time() < time.time() + waitTime or waitTime == 0:
+            if(self.stop_threads):
+                if(self.was_loggedout):
+                    if(self.qr_manager != None and not self.qr_manager.stop):
+                        self.qr_manager.quit()
 
-                    self.QRWindow = None
+                    self.qr_manager = None
                     print("Waiting for Whatsapp.web to store cache")
                     driver.refresh() #Refresh to ensure whatsapp keeps logged in
                     quit() #Quitting safely to ensure whatsapp is logged in
@@ -324,7 +329,7 @@ class startup:
                     #     try:
                     #         driver.find_element(By.XPATH, xpathData.get('searchBox'))
                     #         logging.info("Stopping Startup Thread")
-                    #         logging.info(f"Is LoggedIn = {self.isLoggedin}")
+                    #         logging.info(f"Is LoggedIn = {self.is_loggedin}")
                     #         break
                     #     except NoSuchElementException:
                     #         time.sleep(0.1)
@@ -334,101 +339,102 @@ class startup:
                     break
             time.sleep(0.5)
         else:
-            self.stopThreads = True
+            self.stop_threads = True
             logging.info("Stopping Startup Threads")
             logging.warning("Session Time Expired!,(Login Error ?)")
             quit()
             raise Exception("Session Time Expired!,(Login Error ?)")
 
 
-    def checkLogin(self):
+    def login_check(self):
         while True:
-            if(self.stopThreads == True):
-                logging.info("CheckLogin Thread Stopped!")
+            if(self.stop_threads == True):
+                logging.info("login_check Thread Stopped!")
                 break
 
             try:
                 driver.find_element(By.XPATH, xpathData.get('searchBox'))
-                self.stopThreads = True
-                self.isLoggedin = True
+                self.stop_threads = True
+                self.is_loggedin = True
                 logging.info("Stopping Startup Thread")
-                logging.info(f"Is LoggedIn = {self.isLoggedin}")
+                logging.info(f"Is LoggedIn = {self.is_loggedin}")
                 break
             except NoSuchElementException:
                 try:
-                    qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
+                    qr_id = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
                     logging.warning("Not Loggedin!")
                     print("Not Loggedin, Waiting for Whatsapp.web to generate QRCODE")
-                    self.QRWindow = QRWindow(self.spawnQrWindow, self.terminalQR)
-                    self.isLoggedin = False
-                    self.wasLoggedOut = True
-                    self.QRWindow.start(qrID=qrID)
+                    self.qr_manager = qr_manager(self.spawn_qrwindow, self.terminal_qr)
+                    self.is_loggedin = False
+                    self.was_loggedout = True
+                    self.qr_manager.start(qr_id=qr_id)
                 except NoSuchElementException:
                     time.sleep(0.1)
                     continue
 
-class QRWindow:
-    def __init__(self, spawnQrWindow : bool, terminalQR : bool):
-        self.__qrcode = __import__("qrcode")
+class qr_manager:
+    def __init__(self, spawn_qrwindow : bool, terminal_qr : bool):
+        self.__qrcode__ = __import__("qrcode")
         self.stop = False
-        self.spawnQrWindow = spawnQrWindow
-        self.terminalQR = terminalQR
-        if(spawnQrWindow):
+        self.spawn_qrwindow = spawn_qrwindow
+        self.terminal_qr = terminal_qr
+
+        if(spawn_qrwindow):
             from PIL import Image, ImageTk
-            self.__tk = __import__("tkinter")
-            self.__Image = Image
-            self.__ImageTK = ImageTk
-            self.qrWindowREF = self.__tk.Tk()
+            self.__tk__ = __import__("tkinter")
+            self.__Image__ = Image
+            self.__ImageTK__ = ImageTk
+            self.qrwindow_root = self.__tk__.Tk()
 
             if sys.platform.startswith("win"):
-                self.qrWindowREF.wm_attributes("-topmost", 1)
+                self.qrwindow_root.wm_attributes("-topmost", 1)
             elif sys.platform.startswith("darwin"):
-                self.qrWindowREF.createcommand('tk::mac::ReopenApplication',
-                                lambda: self.qrWindowREF.event_generate('<<ReopenApplication>>'))
-                self.qrWindowREF.createcommand('tk::mac::Preferences',
-                                lambda: self.qrWindowREF.event_generate('<<Preferences>>'))
-                self.qrWindowREF.createcommand('tk::mac::Quit',
-                                lambda: self.qrWindowREF.event_generate('<<Quit>>'))
-                self.qrWindowREF.createcommand('::tk::mac::ShowPreferences',
-                                lambda: self.qrWindowREF.event_generate('<<ShowPreferences>>'))
-                self.qrWindowREF.createcommand('::tk::mac::ShowHelp',
-                                lambda: self.qrWindowREF.event_generate('<<ShowHelp>>'))
-                self.qrWindowREF.createcommand('::tk::mac::Hide',
-                                lambda: self.qrWindowREF.event_generate('<<Hide>>'))
+                self.qrwindow_root.createcommand('tk::mac::ReopenApplication',
+                                lambda: self.qrwindow_root.event_generate('<<ReopenApplication>>'))
+                self.qrwindow_root.createcommand('tk::mac::Preferences',
+                                lambda: self.qrwindow_root.event_generate('<<Preferences>>'))
+                self.qrwindow_root.createcommand('tk::mac::Quit',
+                                lambda: self.qrwindow_root.event_generate('<<Quit>>'))
+                self.qrwindow_root.createcommand('::tk::mac::ShowPreferences',
+                                lambda: self.qrwindow_root.event_generate('<<ShowPreferences>>'))
+                self.qrwindow_root.createcommand('::tk::mac::ShowHelp',
+                                lambda: self.qrwindow_root.event_generate('<<ShowHelp>>'))
+                self.qrwindow_root.createcommand('::tk::mac::Hide',
+                                lambda: self.qrwindow_root.event_generate('<<Hide>>'))
             else:
                 # Linux (requires external libraries like python-xlib)
-                self.qrWindowREF.wm_attributes("-topmost", 1)
+                self.qrwindow_root.wm_attributes("-topmost", 1)
 
-            self.qrWindowREF.overrideredirect(True)
-            self.qrWindowREF.attributes("-toolwindow", 1)
-            self.qrWindowREF.protocol("WM_DELETE_WINDOW", lambda: None)
+            self.qrwindow_root.overrideredirect(True)
+            self.qrwindow_root.attributes("-toolwindow", 1)
+            self.qrwindow_root.protocol("WM_DELETE_WINDOW", lambda: None)
 
             self.filename = "qrcode.png"
             self.label = None
 
     def create_qr_image(self):
         try:
-            image = self.__Image.open(self.filename)
+            image = self.__Image__.open(self.filename)
             image = image.resize((300, 300))
-            photo = self.__ImageTK.PhotoImage(image)
+            photo = self.__ImageTK__.PhotoImage(image)
 
             if self.label is not None:
                 self.label.configure(image=photo)
                 self.label.image = photo  # Keep a reference to avoid garbage collection
             else:
-                self.label = self.__tk.Label(self.qrWindowREF, image=photo)
+                self.label = self.__tk__.Label(self.qrwindow_root, image=photo)
                 self.label.image = photo  # Keep a reference to avoid garbage collection
                 self.label.pack()
         except:
             pass
 
         if(not self.stop):
-            self.qrWindowREF.after(1000, self.create_qr_image)
+            self.qrwindow_root.after(1000, self.create_qr_image)
 
-    def createTerminalQR(self,data, update:bool):
-        qr = self.__qrcode.QRCode(
+    def print_terminal_qr(self,data, update:bool):
+        qr = self.__qrcode__.QRCode(
             version=1,
-            error_correction=self.__qrcode.constants.ERROR_CORRECT_L,
+            error_correction=self.__qrcode__.constants.ERROR_CORRECT_L,
             box_size=1,
             border=0,
         )
@@ -442,76 +448,71 @@ class QRWindow:
         # qr.print_tty()
         qr.print_ascii()
 
-    def updateQR(self, qrID):
-        lqrID = qrID
-        if(self.spawnQrWindow == False and self.terminalQR == False):
+    def update_qr(self, qr_id):
+        previous_qr_id = qr_id
+        if(self.spawn_qrwindow == False and self.terminal_qr == False):
             return
         while not self.stop:
             try:
-                qrID = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
+                qr_id = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
             except:
                 self.quit()
                 break
-            if(lqrID != qrID):
-                if(self.spawnQrWindow):
-                    qr = self.__qrcode.QRCode()
-                    qr.add_data(qrID)
+            if(previous_qr_id != qr_id):
+                if(self.spawn_qrwindow):
+                    qr = self.__qrcode__.QRCode()
+                    qr.add_data(qr_id)
                     qr.make_image().save(self.filename)
 
-                if(self.terminalQR):
-                    self.createTerminalQR(qrID,True)
+                if(self.terminal_qr):
+                    self.print_terminal_qr(qr_id,True)
 
-                lqrID = qrID
+                previous_qr_id = qr_id
             time.sleep(0.5)
         return
 
-    def start(self, qrID):
-        if(self.spawnQrWindow == True and self.terminalQR == True):
-            qr = self.__qrcode.QRCode()
-            qr.add_data(qrID)
+    def start(self, qr_id):
+        if(self.spawn_qrwindow == True and self.terminal_qr == True):
+            qr = self.__qrcode__.QRCode()
+            qr.add_data(qr_id)
             qr.make_image().save(self.filename)
             self.create_qr_image()
-            logging.info('Starting QRWindow')
-            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
-            threading.Thread(target=self.updateQR, args=(qrID,)).start()
-            self.qrWindowREF.mainloop()
+            logging.info('Starting qr_manager')
+            threading.Thread(target = self.print_terminal_qr, args=(qr_id,False)).start()
+            threading.Thread(target=self.update_qr, args=(qr_id,)).start()
+            self.qrwindow_root.mainloop()
 
-        elif(self.terminalQR == True and self.spawnQrWindow == False):
-            threading.Thread(target = self.createTerminalQR, args=(qrID,False)).start()
-            self.updateQR(qrID)
+        elif(self.terminal_qr == True and self.spawn_qrwindow == False):
+            threading.Thread(target = self.print_terminal_qr, args=(qr_id,False)).start()
+            self.update_qr(qr_id)
 
-        elif(self.spawnQrWindow == True and self.terminalQR == False):
-            qr = self.__qrcode.QRCode()
-            qr.add_data(qrID)
+        elif(self.spawn_qrwindow == True and self.terminal_qr == False):
+            qr = self.__qrcode__.QRCode()
+            qr.add_data(qr_id)
             qr.make_image().save(self.filename)
-            logging.info('Starting QRWindow')
-            threading.Thread(target=self.updateQR, args=(qrID,)).start()
-            self.qrWindowREF.mainloop()
+            logging.info('Starting qr_manager')
+            threading.Thread(target=self.update_qr, args=(qr_id,)).start()
+            self.qrwindow_root.mainloop()
     
     def quit(self):
         self.stop = True
-        if(self.terminalQR):
+        if(self.terminal_qr):
             sys.stdout.write("\033[27A")
             for _ in range(27):
                 print(" " * 55)
             sys.stdout.write("\033[27A\n")
         print("Cleaning UP")
-        if(self.spawnQrWindow):
-            logging.info('Quitting QRWindow')
-            self.qrWindowREF.withdraw()
-            self.qrWindowREF.quit()
+        if(self.spawn_qrwindow):
+            logging.info('Quitting qr_manager')
+            self.qrwindow_root.withdraw()
+            self.qrwindow_root.quit()
 
-__onReadyCallBacks = []
-def onReady(callBack):
-    global __onReadyCallBacks
-    __onReadyCallBacks.append(callBack)
+__on_ready_callbacks__ = []
+def on_ready(callBack):
+    global __on_ready_callbacks__
+    __on_ready_callbacks__.append(callBack)
 
-def _onReadyCallBackFN():
-    global __onReadyCallBacks
-    for i in __onReadyCallBacks:
-        threading.Thread(target=i).start()
-
-def getLink(link : str):
+def get_link(link : str):
     try:
         driver.get(link)
     except WebDriverException:
@@ -545,8 +546,8 @@ class openChat:
             raise Exception(f"No chat found for {self.__contact}, If you never sent message to this contact use new=True (Use phone number insted of contact name)")
     
     def openNew(self):
-        getLink(f'https://web.whatsapp.com/send?phone={self.__contact}')
-        startup(spawnQrWindow=False,terminalQR=False).waitToLoad(waitTime=0)
+        get_link(f'https://web.whatsapp.com/send?phone={self.__contact}')
+        startup_checks(spawn_qrwindow=False,terminal_qr=False).wait_to_load(waitTime=0)
         try:
             WebDriverWait(driver,3).until(EC.presence_of_element_located((By.XPATH, xpathData.get('chatBox'))))
         except:
@@ -665,7 +666,6 @@ class waitToSend:
     def __repr__(self) -> str:
         return self
 
-__onSendCallBacks = []
 _LsentID = None
 _pause = False
 
@@ -695,22 +695,28 @@ class __onSend:
                 self.id = sentID
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",sentID)}').text
-                    threading.Thread(target=_onSendCallBackFN, args=(self,)).start()
+                    threading.Thread(target=__on_send_callback_fn__, args=(self,)).start()
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
             time.sleep(0.1)
 
-def _onSendCallBackFN(self):
-    global __onSendCallBacks
-    for i in __onSendCallBacks:
+def __on_send_callback_fn__(self):
+    global __on_send_callbacks__
+    for i in __on_send_callbacks__:
         threading.Thread(target=i, args=(self,)).start()
 
-__onSendThread = None
-def onSend(callBack):
-    global __onSendCallBacks
-    global __onSendThread
-    __onSendCallBacks.append(callBack)
+__on_send_thread__ = None
+__on_send_callbacks__ = []
+def on_send(callBack):
+    """
+    The function `on_send` adds a callback function to a list of callbacks.
+    
+    :param callBack: The `callBack` parameter is a function that will be executed when the `on_send`
+    function is called
+    """
+    global __on_send_callbacks__
+    __on_send_callbacks__.append(callBack)
 
 class getRecived:
     def __init__(self) -> None:
@@ -791,23 +797,29 @@ class __onRecive:
                 self.id = recivedID
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",recivedID)}').text
-                    threading.Thread(target=_onReciveCallBackFN, args=(self,)).start()
+                    threading.Thread(target=__on_recive_callback_fn__, args=(self,)).start()
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
             time.sleep(0.1)
 
-def _onReciveCallBackFN(self):
-    global __onReciveCallBacks
-    for i in __onReciveCallBacks:
+def __on_recive_callback_fn__(self):
+    global __on_recive_callbacks__
+    for i in __on_recive_callbacks__:
         threading.Thread(target=i, args=(self,)).start()
 
-__onReciveCallBacks = []
-__reciveThread = None
-def onRecive(callBack):
-    global __onReciveCallBacks
-    global __reciveThread
-    __onReciveCallBacks.append(callBack)
+__on_recive_callbacks__ = []
+__recive_thread__ = None
+def on_recive(callBack):
+    """
+    The function `on_recive` adds a callback function to a list of callbacks.
+    
+    :param callBack: The `callBack` parameter is a function that will be called when a receive event
+    occurs.
+    """
+    global __on_recive_callbacks__
+    global __recive_thread__
+    __on_recive_callbacks__.append(callBack)
 
 class getMessage:
     def __init__(self) -> None:
@@ -888,25 +900,31 @@ class __onMessage:
                 self.id = msgID
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpathData.get("textByID").replace("PLACEHOLDER",msgID)}').text
-                    threading.Thread(target=_onMsgCallBackFN, args=(self,)).start()
+                    threading.Thread(target=__on_message__callback_fn__, args=(self,)).start()
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
             time.sleep(0.1)
 
-def _onMsgCallBackFN(self):
-    global __onMsgCallBacks
-    for i in __onMsgCallBacks:
+def __on_message__callback_fn__(self):
+    global __on_message__callbacks__
+    for i in __on_message__callbacks__:
         threading.Thread(target=i, args=(self,)).start()
 
-__onMsgCallBacks = []
-__msgThread = None
-def onMessage(callBack):
-    global __onMsgCallBacks
-    global __msgThread
-    __onMsgCallBacks.append(callBack)
+__on_message__callbacks__ = []
+__on_message__thread__ = None
+def on_message(callBack):
+    """
+    The function `on_message` adds a callback function to a list of callbacks.
+    
+    :param callBack: The `callBack` parameter is a function that will be called whenever a new message
+    is received
+    """
+    global __on_message__callbacks__
+    global __on_message__thread__
+    __on_message__callbacks__.append(callBack)
 
-@onMessage
+@on_message
 def __command_manager__(ctx):
     built_commands = commands.get_commands()
     cmd = ctx.body.split()[0]
@@ -916,18 +934,18 @@ def __command_manager__(ctx):
         else:
             built_commands[cmd](ctx)
 
-@onReady
+@on_ready
 def __setup__():
-    global __msgThread, __onSendThread, __reciveThread
+    global __on_message__thread__, __on_send_thread__, __recive_thread__
 
-    if(__onSendCallBacks != []):
-        __onSendThread = threading.Thread(target=__onSend)
-        __onSendThread.start()
+    if(__on_send_callbacks__ != []):
+        __on_send_thread__ = threading.Thread(target=__onSend)
+        __on_send_thread__.start()
 
-    if(__onReciveCallBacks != []):
-        __reciveThread = threading.Thread(target=__onRecive)
-        __reciveThread.start()
+    if(__on_recive_callbacks__ != []):
+        __recive_thread__ = threading.Thread(target=__onRecive)
+        __recive_thread__.start()
 
-    if(__onMsgCallBacks != []):
-        __msgThread = threading.Thread(target=__onMessage)
-        __msgThread.start()
+    if(__on_message__callbacks__ != []):
+        __on_message__thread__ = threading.Thread(target=__onMessage)
+        __on_message__thread__.start()
