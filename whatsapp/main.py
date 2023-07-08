@@ -40,6 +40,7 @@ sysinfo = {
 "Processor" : system.processor
 }
 
+
 class run:
     '''
     An unofficial Python wrapper for Whatsapp
@@ -60,21 +61,54 @@ class run:
         logFile : bool = False,
         logLevel : logging = logging.CRITICAL
     ) -> None:
-        '''
-        Parameters:
-        - browser: Supported Browsers [Chrome, FireFox] default is chrome
-        - headless: Runs the Browser as backGround service and no GUI is initialized
-        - spawnQrWindow : Starts a window with Whatsapp login qrcode,
-        - terminalQR : Outputs Whatsapp login qrcode to terminal,
-        - profile: Select the chrome/firefox profile where Whatsapp is already loggedin, Profile name can be found at this link `chrome://version/`
-        - waitTime: Time to wait for whatsapp to load before session timeout, Make waitTime = 0 if you want to wait forever
-        - command_classes: Class having commands should be passed in list 
-        - customDriver: Pass the selenium webdriver if you dont want to use default settings provided by this module
-        - profileDir: Pass the path of the custom chrome profile, Only pass the path if you want to use other directory than chromes default directory
-        - freshStart: This will logout from whatsapp and make a new start
-        - log: Logs all details to stdout
-        - logFile: Logs to file at root
-        - logLevel: Log level (Default Critical)'''
+        """
+        This function is the constructor for a class and initializes its attributes with default values.
+        
+        :param browser: The browser parameter is a string that specifies the browser to be used. The
+        default value is 'Chrome', defaults to Chrome
+        :type browser: str (optional)
+        :param headless: The "headless" parameter determines whether the browser should run in headless
+        mode or not. Headless mode means that the browser will run without a graphical user interface,
+        which can be useful for running automated tests or scraping data from websites, defaults to True
+        :type headless: bool (optional)
+        :param spawnQrWindow: A boolean value indicating whether to spawn a separate window to display
+        the QR code for logging in, defaults to True
+        :type spawnQrWindow: bool (optional)
+        :param terminalQR: A boolean value indicating whether to display the QR code in the terminal or
+        not. If set to True, the QR code will be displayed in the terminal, defaults to True
+        :type terminalQR: bool (optional)
+        :param profile: The `profile` parameter is used to specify the profile directory to be used by
+        the browser. By default, it is set to "Default", which means the default profile directory will
+        be used. However, you can specify a different profile directory if needed, defaults to Default
+        :type profile: str (optional)
+        :param waitTime: The `waitTime` parameter is an integer that represents the time in seconds to
+        wait till whatsapp.web loads. If whatsapp.web fails to load before waitTime program is terminated.
+        When waitTime is 0 it waits forever, defaults to 0
+        :type waitTime: int (optional)
+        :param command_classes: The `command_classes` parameter is a list that allows you to pass custom
+        command written inside classes.
+        :type command_classes: list
+        :param customDriver: The `customDriver` parameter is used to provide a custom WebDriver
+        instance. This allows you to use a different browser driver other than the default one provided
+        by the library
+        :param profileDir: The `profileDir` parameter is used to specify the directory where the user
+        profile for the browser is located. By default, it is set to "Default", which means it will use
+        the default profile directory for the browser. However, you can specify a different directory if
+        needed, defaults to Default
+        :type profileDir: str (optional)
+        :param freshStart: The `freshStart` parameter is a boolean flag that determines whether the
+        browser should start with a fresh profile or not. If `freshStart` is set to `True`, the browser
+        will start with a new profile, discarding any existing user data, defaults to False
+        :type freshStart: bool (optional)
+        :param log: A boolean value indicating whether or not to enable logging, defaults to True
+        :type log: bool (optional)
+        :param logFile: A boolean value indicating whether to log the output to a file or not, defaults
+        to False
+        :type logFile: bool (optional)
+        :param logLevel: The `logLevel` parameter is used to specify the level of logging that should be
+        recorded, defaults to logging.CRITICAL
+        :type logLevel: logging
+        """
 
         global driver
         driver = customDriver
