@@ -1,0 +1,1 @@
+Solved - Command decorator doesnt work in classes

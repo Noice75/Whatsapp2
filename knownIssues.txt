@@ -1,0 +1,3 @@
+ON chat changed reply (after chat changes it replys to the last message even when it shouldnt)
+function still works if setup function is empty
+close setup threads which are not in use and remove function ref
