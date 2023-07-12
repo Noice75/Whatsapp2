@@ -30,8 +30,6 @@ sys.path.append(dir)
 with open(f'{dir}/xpath.json', 'r') as openfile:
     xpath_data = json.load(openfile)
 
-driver = None
-
 system = platform.uname()
 sysinfo = {
 "system"    : system.system,
@@ -42,6 +40,20 @@ sysinfo = {
 "Processor" : system.processor
 }
 
+#Public Var
+driver = None
+exit_flag = True
+
+#Private Var
+_on_ready_callbacks_ = []
+_on_send_callbacks_ = []
+_on_recive_callbacks_ = []
+_on_message_callbacks_ = []
+_last_sent_id_ = None
+_pause_while_sending_ = False
+_on_send_thread_ = None
+_on_recive_thread_ = None
+_on_message_thread_ = None
 
 class run:
     '''
@@ -509,7 +521,6 @@ class _qr_manager_:
             self.qrwindow_root.withdraw()
             self.qrwindow_root.quit()
 
-_on_ready_callbacks_ = []
 def on_ready(callBack):
     """
     The function `on_ready` adds a callback function to a list of callbacks that will be executed when
@@ -529,7 +540,9 @@ def get_link(link : str):
         raise Exception("DNS ERROR, Webpage Down")
 
 def quit():
+    global exit_flag
     logging.info("Quitting!")
+    exit_flag = False
     driver.quit()
 
 class open_message:
@@ -687,9 +700,6 @@ class wait_to_send:
     def __repr__(self) -> str:
         return self
 
-_last_sent_id_ = None #Last sent message id by bot
-_pause_while_sending_ = False
-
 class _on_send_:
     def __init__(self) -> None:
         self.id = None
@@ -700,7 +710,7 @@ class _on_send_:
     def _sent_message_(self):
         global _last_sent_id_
         global _pause_while_sending_
-        while True:
+        while exit_flag:
             if(_pause_while_sending_): #To ensure message sent by bot is not captured
                 time.sleep(0.1)
                 continue
@@ -727,8 +737,6 @@ def _on_send_callback_fn_(self):
     for i in _on_send_callbacks_:
         threading.Thread(target=i, args=(self,)).start()
 
-_on_send_thread_ = None
-_on_send_callbacks_ = []
 def on_send(callBack):
     """
     The function `on_send` adds a callback function to a list of callbacks.
@@ -808,7 +816,7 @@ class _on_recive_:
         pass
     
     def _recive_message_(self):
-        while True:
+        while exit_flag:
             try:
                 recived_id = driver.find_element(By.XPATH, f"({xpath_data.get('recivedMSG')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
@@ -832,8 +840,6 @@ def _on_recive_callback_fn_(self):
     for i in _on_recive_callbacks_:
         threading.Thread(target=i, args=(self,)).start()
 
-_on_recive_callbacks_ = []
-_on_recive_thread_ = None
 def on_recive(callBack):
     """
     The function `on_recive` adds a callback function to a list of callbacks.
@@ -914,7 +920,7 @@ class _on_message_:
         pass
     
     def _get_message_(self):
-        while True:
+        while exit_flag:
             try:
                 message_id = driver.find_element(By.XPATH, f"({xpath_data.get('msg')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
@@ -938,8 +944,6 @@ def _on_message_callback_fn_(self):
     for i in _on_message_callbacks_:
         threading.Thread(target=i, args=(self,)).start()
 
-_on_message_callbacks_ = []
-_on_message_thread_ = None
 def on_message(callBack):
     """
     The function `on_message` adds a callback function to a list of callbacks.

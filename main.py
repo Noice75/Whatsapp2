@@ -1,17 +1,16 @@
 import time
 import logging
 import os
-start = time.time()
 import whatsapp
 from whatsapp import commands
-
+start = time.time()
 @whatsapp.on_ready
 def onReady():
+    print(time.time() - start)
     for filename in os.listdir("./commands"):
         if filename.endswith(".py"):
             whatsapp.load_extension(f"commands/{filename[:-3]}")
     whatsapp.open_message("1234567890")
-    print(time.time() - start)
 
 @commands.command(aliases=["Unload"])
 def unload(ctx):
