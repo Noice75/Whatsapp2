@@ -702,8 +702,13 @@ class wait_to_send:
 
 class _on_send_:
     def __init__(self) -> None:
-        self.id = None
-        self.body = None
+        class _repr:
+            def __init__(self) -> None:
+                self.id = None
+                self.body = None
+                pass
+        self._repr = _repr
+        self._reprRef = _repr()
         self._sent_message_()
         pass
 
@@ -719,14 +724,15 @@ class _on_send_:
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
-            if(sent_id != self.id and _last_sent_id_ != sent_id):
-                if(self.id == None):
-                    self.id = sent_id
+            if(sent_id != self._reprRef.id and _last_sent_id_ != sent_id):
+                if(self._reprRef.id == None):
+                    self._reprRef.id = sent_id
                     continue
-                self.id = sent_id
+                self._reprRef.id = sent_id
                 try:
-                    self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
-                    threading.Thread(target=_on_send_callback_fn_, args=(self,)).start()
+                    self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
+                    threading.Thread(target=_on_send_callback_fn_, args=(self._reprRef,)).start()
+                    self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
@@ -810,8 +816,13 @@ class wait_to_recive:
 
 class _on_recive_:
     def __init__(self) -> None:
-        self.id = None
-        self.body = None
+        class _repr:
+            def __init__(self) -> None:
+                self.id = None
+                self.body = None
+                pass
+        self._repr = _repr
+        self._reprRef = _repr()
         self._recive_message_()
         pass
     
@@ -822,14 +833,15 @@ class _on_recive_:
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
-            if(recived_id != self.id):
-                if(self.id == None):
-                    self.id = recived_id
+            if(recived_id != self._reprRef.id):
+                if(self._reprRef.id == None):
+                    self._reprRef.id = recived_id
                     continue
-                self.id = recived_id
+                self._reprRef.id = recived_id
                 try:
-                    self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",recived_id)}').text
-                    threading.Thread(target=_on_recive_callback_fn_, args=(self,)).start()
+                    self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",recived_id)}').text
+                    threading.Thread(target=_on_recive_callback_fn_, args=(self._reprRef,)).start()
+                    self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
@@ -914,8 +926,13 @@ class wait_for_message:
 
 class _on_message_:
     def __init__(self) -> None:
-        self.id = None
-        self.body = None
+        class _repr:
+            def __init__(self) -> None:
+                self.id = None
+                self.body = None
+                pass
+        self._repr = _repr
+        self._reprRef = _repr()
         self._get_message_()
         pass
     
@@ -926,14 +943,15 @@ class _on_message_:
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
                 time.sleep(0.1)
                 continue
-            if(message_id != self.id):
-                if(self.id == None):
-                    self.id = message_id
+            if(message_id != self._reprRef.id):
+                if(self._reprRef.id == None):
+                    self._reprRef.id = message_id
                     continue
-                self.id = message_id
+                self._reprRef.id = message_id
                 try:
-                    self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
-                    threading.Thread(target=_on_message_callback_fn_, args=(self,)).start()
+                    self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
+                    threading.Thread(target=_on_message_callback_fn_, args=(self._reprRef,)).start()
+                    self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
