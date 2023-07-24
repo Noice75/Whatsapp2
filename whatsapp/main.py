@@ -12,6 +12,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromeService
+from bs4 import BeautifulSoup
 from . import commands
 import threading
 import platform
@@ -19,8 +20,10 @@ import urllib3
 import getpass
 import logging
 import shutil
+import html
 import time
 import json
+import re
 import sys
 import os
 
@@ -949,7 +952,21 @@ class _on_message_:
                     continue
                 self._reprRef.id = message_id
                 try:
-                    self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
+                    try:
+                        self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}')
+                    except:
+                        self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("emojiTextByID").replace("PLACEHOLDER",message_id)}')
+                    inner_attribute = self._reprRef.body.get_attribute("innerHTML")
+                    soup = BeautifulSoup(inner_attribute, "html.parser")
+                    img_elm = soup.find("img")
+                    if(img_elm != None):
+                        pattern = r'<img.*?alt="(.*?)".*?>'
+                        def emoji_replacer(match):
+                            alt_text = match.group(1)
+                            return alt_text
+                        self._reprRef.body = re.sub(pattern, emoji_replacer, html.unescape(inner_attribute))
+                    else:
+                        self._reprRef.body = self._reprRef.body.text
                     threading.Thread(target=_on_message_callback_fn_, args=(self._reprRef,)).start()
                     self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):

@@ -54,4 +54,8 @@ def reloadall(ctx):
             whatsapp.load_extension(f"commands/{file_name[:-3]}")
     whatsapp.send("ReLoaded All")
 
+@whatsapp.on_message
+def ctx(ctx):
+    print(f"Message - {ctx.body}, {ctx.id}")
+
 whatsapp.run(logLevel=logging.INFO)
