@@ -775,6 +775,7 @@ class _on_send_:
                     self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
                     threading.Thread(target=_on_send_callback_fn_, args=(self._reprRef,)).start()
                     self._reprRef = self._repr() #reset _repr to default
+                    self._reprRef.id = sent_id
                 except (NoSuchElementException, StaleElementReferenceException):
                     time.sleep(0.1)
                     continue
