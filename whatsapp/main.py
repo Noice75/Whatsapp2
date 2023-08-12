@@ -2,9 +2,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.chrome.webdriver import WebDriver as ChromeWebDriver
+from selenium.webdriver.firefox.webdriver import WebDriver as FirefoxWebDriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import WebDriverException
@@ -12,6 +15,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromeService
+from typing import Optional, Union, Any
 from bs4 import BeautifulSoup
 from . import commands
 import threading
@@ -44,7 +48,7 @@ sysinfo = {
 }
 
 #Public Var
-driver = None
+driver : Union[ChromeWebDriver,FirefoxWebDriver]
 exit_flag = True
 
 #Private Var
@@ -71,12 +75,12 @@ class run:
         profile : str = "Default",
         waitTime : int = 0,
         command_classes : list = [],
-        customDriver = None,
+        customDriver : Optional[Union[ChromeWebDriver, FirefoxWebDriver]] = None,
         profileDir : str = "Default",
         clean_start : bool = False,
         log : bool = True,
         logFile : bool = False,
-        logLevel : logging = logging.CRITICAL
+        logLevel : int = logging.CRITICAL
     ) -> None:
         """
         This function is the constructor for a class and initializes its attributes with default values.
@@ -128,10 +132,11 @@ class run:
         """
 
         global driver
-        driver = customDriver
+        if(customDriver != None):
+            driver = customDriver
 
         self.browser = browser
-        self.driver = driver
+        self.driver = customDriver
         self.headless = headless
         self.profile = profile
         self.profileDir = profileDir
@@ -198,9 +203,6 @@ class run:
             raise Exception("Driver Error! / Invalid Driver!")
         
         _startup_checks_(spawn_qrwindow=self.spawn_qrwindow, terminal_qr=self.terminal_qr).wait_to_load(waitTime=self.waitTime)
-        if(self.driver == None and self.os != None and self.browser != None):
-            
-            self._defaultDriver()
 
     def _initialize_driver_(self):
         global driver
@@ -325,7 +327,7 @@ class run:
 
             logging.info("Driver Initialized!")
         else:
-            logging.CRITICAL("Unsupported Operating system")
+            logging.critical("Unsupported Operating system")
             raise Exception("Unsupported Operating system")
 
     def _clean_start_(self):
@@ -676,7 +678,7 @@ class send:
                         driver.find_element(By.XPATH, f'{xpath_data.get("sentMSG").replace("true",self.id)}{xpath_data.get("msgStatus").replace("PLACEHOLDER", " Delivered ")}')
                 break
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str | None:
         return self.id
     
 class get_sent:
@@ -702,7 +704,7 @@ class get_sent:
             except (NoSuchElementException, StaleElementReferenceException):
                 raise Exception(f"Not a text, Maybe video or sticker or files Error!")
             
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'get_sent':
         return self
 
 class wait_to_send:
@@ -737,15 +739,15 @@ class wait_to_send:
                     continue
             time.sleep(0.1)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'wait_to_send':
         return self
 
 class _on_send_:
     def __init__(self) -> None:
         class _repr:
             def __init__(self) -> None:
-                self.id = None
-                self.body = None
+                self.id : Union[str,None] = None
+                self.body : Union[str,None]= None
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -816,7 +818,7 @@ class get_recived:
             except (NoSuchElementException, StaleElementReferenceException):
                 raise Exception(f"Not a text, Maybe video or sticker or files Error!")
             
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'get_recived':
         return self
     
 class wait_to_recive:
@@ -851,15 +853,15 @@ class wait_to_recive:
                     continue
             time.sleep(0.1)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'wait_to_recive':
         return self
 
 class _on_recive_:
     def __init__(self) -> None:
         class _repr:
             def __init__(self) -> None:
-                self.id = None
-                self.body = None
+                self.id : Union[str,None] = None
+                self.body : Union[str,None] = None
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -926,7 +928,7 @@ class get_message:
             except (NoSuchElementException, StaleElementReferenceException):
                 raise Exception(f"Not a text, Maybe video or sticker or files Error!")
             
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'get_message':
         return self
 
 class wait_for_message:
@@ -961,15 +963,15 @@ class wait_for_message:
                     continue
             time.sleep(0.1)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> 'wait_for_message':
         return self
 
 class _on_message_:
     def __init__(self) -> None:
         class _repr:
             def __init__(self) -> None:
-                self.id = None
-                self.body = None
+                self.id : Union[str,None] = None
+                self.body : Union[str,None] = None
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -993,7 +995,7 @@ class _on_message_:
                         self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}')
                     except:
                         self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("emojiTextByID").replace("PLACEHOLDER",message_id)}')
-                    inner_attribute = self._reprRef.body.get_attribute("innerHTML")
+                    inner_attribute : Any = self._reprRef.body.get_attribute("innerHTML")
                     soup = BeautifulSoup(inner_attribute, "html.parser")
                     img_elm = soup.find("img")
                     if(img_elm != None):
