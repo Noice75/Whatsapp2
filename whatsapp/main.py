@@ -52,15 +52,15 @@ driver : Union[ChromeWebDriver,FirefoxWebDriver]
 exit_flag : bool = True
 
 #Private Var
-_on_ready_callbacks_ = []
-_on_send_callbacks_ = []
-_on_recive_callbacks_ = []
-_on_message_callbacks_ = []
-_last_sent_id_ = None
-_pause_while_sending_ = False
-_on_send_thread_ = None
-_on_recive_thread_ = None
-_on_message_thread_ = None
+_on_ready_callbacks_ : list = []
+_on_send_callbacks_ : list = []
+_on_recive_callbacks_ : list = []
+_on_message_callbacks_ : list = []
+_last_sent_id_ : Union[str,None] = None
+_pause_while_sending_ : bool = False
+_on_send_thread_ : Union[threading.Thread, None] = None
+_on_recive_thread_ : Union[threading.Thread, None] = None
+_on_message_thread_ : Union[threading.Thread, None] = None
 
 class run:
     '''
