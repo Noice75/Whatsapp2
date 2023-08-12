@@ -58,4 +58,4 @@ def reloadall(ctx):
 def ctx(ctx):
     print(f"Message - {ctx.body}, {ctx.id}")
 
-whatsapp.run(logLevel=logging.INFO)
+whatsapp.run(logLevel=logging.INFO, browser="brave")

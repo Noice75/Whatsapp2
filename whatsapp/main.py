@@ -172,7 +172,7 @@ class run:
             logging.warning("No Browser Defined!")
             raise Exception("No Browser Defined!")
 
-        if(self.browser != "chrome" and self.browser != "firefox" and self.driver == None):
+        if(self.browser != "chrome" and self.browser != "firefox" and self.browser != "brave" and self.driver == None):
             logging.warning("UnSupported Browser!")
             raise Exception("Supported Browsers Are Chrome And Firefox")
 
@@ -286,7 +286,44 @@ class run:
             self.driver = driver
 
             logging.info("Driver Initialized!")
-        
+        elif(self.driver == None and self.os == "Windows" and self.browser == "brave"):
+            brave_options = Options()
+            brave_options.add_argument(f"user-agent={xpath_data.get('userAgent_Chrome')}")
+
+            if(self.profileDir == "Default" and self.profile != "Default"):
+                brave_options.add_argument(f"user-data-dir=C:\\Users\\{self.user}\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data")
+                brave_options.add_argument(f"profile-directory={self.profile}")
+
+            elif(self.profileDir != "Default"):
+                brave_options.add_argument(f"user-data-dir={self.profileDir}")
+                brave_options.add_argument(f"profile-directory={self.profile}")
+
+            elif(self.profileDir == "Default" and self.profile == "Default"):
+                brave_options.add_argument(f"user-data-dir={dir}/dependences/BraveProfile")
+                brave_options.add_argument(f"profile-directory={self.profile}")
+
+            if(self.headless):
+                brave_options.add_argument("--start-maximized")
+                brave_options.add_argument("--window-size=1920,1080")
+                brave_options.add_argument("--headless")
+                brave_options.add_argument("--no-sandbox")
+                brave_options.add_argument("--disable-gpu")
+            brave_options.binary_location = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe"
+            brave_options.add_argument("--disable-extensions")
+            brave_options.add_argument("disable-infobars")
+            brave_options.add_argument("--log-level=3")
+            brave_options.add_argument("--disable-dev-shm-usage")
+            brave_options.add_argument("--max-connections=5")
+            brave_options.add_argument('--disable-blink-features=AutomationControlled')
+
+            brave_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            brave_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            brave_options.add_experimental_option('useAutomationExtension', False)
+
+            driver = webdriver.Chrome(options=brave_options)
+            self.driver = driver
+
+            logging.info("Driver Initialized!")
         else:
             logging.CRITICAL("Unsupported Operating system")
             raise Exception("Unsupported Operating system")

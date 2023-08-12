@@ -10,7 +10,8 @@ setup(
         'selenium',
         'webdriver_manager',
         'qrcode',
-        'Pillow'
+        'Pillow',
+        'beautifulsoup4'
     ],
     entry_points={
         'console_scripts': [
