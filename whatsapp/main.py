@@ -49,7 +49,7 @@ sysinfo = {
 
 #Public Var
 driver : Union[ChromeWebDriver,FirefoxWebDriver]
-exit_flag = True
+exit_flag : bool = True
 
 #Private Var
 _on_ready_callbacks_ = []
