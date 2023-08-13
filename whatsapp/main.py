@@ -24,6 +24,7 @@ import urllib3
 import getpass
 import logging
 import shutil
+import emoji
 import html
 import time
 import json
@@ -994,19 +995,52 @@ class _on_message_:
                 try:
                     try:
                         self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}')
+                        inner_attribute : Any = self._reprRef.body.get_attribute("innerHTML")
+                        text = self._reprRef.body.text
                     except:
-                        self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("emojiTextByID").replace("PLACEHOLDER",message_id)}')
-                    inner_attribute : Any = self._reprRef.body.get_attribute("innerHTML")
-                    soup = BeautifulSoup(inner_attribute, "html.parser")
-                    img_elm = soup.find("img")
-                    if(img_elm != None):
-                        pattern = r'<img.*?alt="(.*?)".*?>'
-                        def emoji_replacer(match):
-                            alt_text = match.group(1)
-                            return alt_text
-                        self._reprRef.body = re.sub(pattern, emoji_replacer, html.unescape(inner_attribute))
-                    else:
-                        self._reprRef.body = self._reprRef.body.text
+                        self._reprRef.body = driver.find_elements(By.XPATH, f'{xpath_data.get("emojiTextByID").replace("PLACEHOLDER",message_id)}')
+                        inner_attribute = ''
+                        if(len(self._reprRef.body) > 1):
+                            for elm in self._reprRef.body:
+                                print(elm.get_attribute("innerHTML"))
+                                inner_attribute += elm.get_attribute("innerHTML")
+                            text = ''
+                        else:
+                            text = self._reprRef.body.text
+                    inner_attribute = html.unescape(inner_attribute)
+                    print("inner = ", inner_attribute)
+                    print("text = ", text)
+                    char = ""
+                    def is_emoji(s):
+                        return emoji.emoji_count(s) > 0
+                    index = 0
+                    while True:
+                        try:
+                            str = text[index]
+                        except:
+                            try:
+                                if(inner_attribute[len(text):][0] == "<"):
+                                    str = ""
+                                else:
+                                    break
+                            except:
+                                break
+                        if(inner_attribute[index] != str):
+                            emoji_found = False
+                            inner_attribute = inner_attribute[index:]
+                            for i in range(len(inner_attribute)):
+                                if(is_emoji(inner_attribute[i]) and not emoji_found):
+                                    char+=inner_attribute[i]
+                                    emoji_found = True
+                                elif(emoji_found and inner_attribute[i] == ">"):
+                                    inner_attribute = text[:index]+inner_attribute[i+1:]
+                                    if(index != 0):
+                                        char+=str
+                                    break
+                        else:
+                            char += str
+                            index += 1
+                    self._reprRef.body = char
                     threading.Thread(target=_on_message_callback_fn_, args=(self._reprRef,)).start()
                     self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):
