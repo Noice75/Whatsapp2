@@ -418,7 +418,7 @@ class _startup_checks_:
                 break
             except NoSuchElementException:
                 try:
-                    qr_id = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
+                    qr_id = driver.find_element(By.XPATH, '//div[@class="_19vUU"]').get_attribute("data-ref")
                     logging.warning("Not Loggedin!")
                     print("Not Loggedin, Waiting for Whatsapp.web to generate QRCODE")
                     self._qr_manager_ = _qr_manager_(self.spawn_qrwindow, self.terminal_qr)
@@ -511,8 +511,14 @@ class _qr_manager_:
             return
         while not self.stop:
             try:
-                qr_id = driver.find_element(By.XPATH, '//div[@data-testid="qrcode"]').get_attribute("data-ref")
+                qr_id = driver.find_element(By.XPATH, '//div[@class="_19vUU"]').get_attribute("data-ref")
             except:
+                try:
+                    driver.find_element(By.XPATH, '//span[@data-icon="refresh-large"]').click()
+                    logging.critical("QR TIMEOUT!")
+                    continue
+                except:
+                    pass
                 self.quit()
                 break
             if(previous_qr_id != qr_id):
