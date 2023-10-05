@@ -622,6 +622,11 @@ class open_message:
             actions.send_keys(Keys.TAB * 2)
             actions.perform()
             WebDriverWait(driver,1).until(EC.presence_of_element_located((By.XPATH, xpath_data.get('chatBox'))))
+            time.sleep(2)
+            try:
+                driver.find_element(By.XPATH, xpath_data.get("cancelsearch")).click()
+            except:
+                pass
         except NoSuchElementException:
             raise Exception(f"No chat found for {self.contact}, If you never sent message to this contact use new=True (Use phone number insted of contact name)")
     
@@ -670,7 +675,8 @@ class send:
             self._wait_()
 
     def _wait_(self):
-        while time.time() < time.time() + self.waitTime or self.waitTime == 0:
+        start_time = time.time()
+        while time.time() < start_time + self.waitTime or self.waitTime == 0:
             try:
                 driver.find_element(By.XPATH, f'{xpath_data.get("sentMSG").replace("true",self.id)}{xpath_data.get("msgStatus").replace("PLACEHOLDER", " Pending ")}')
                 time.sleep(0.1)
@@ -727,7 +733,8 @@ class wait_to_send:
         pass
     
     def _wait_(self):
-        while time.time() < time.time() + self.waitTime or self.waitTime == 0:
+        start_time = time.time()
+        while time.time() < start_time + self.waitTime or self.waitTime == 0:
             try:
                 sent_id = driver.find_element(By.XPATH, f"({xpath_data.get('sentMSG')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
@@ -842,7 +849,8 @@ class wait_to_recive:
         pass
     
     def _wait_(self):
-        while time.time() < time.time() + self.waitTime or self.waitTime == 0:
+        start_time = time.time()
+        while time.time() < start_time + self.waitTime or self.waitTime == 0:
             try:
                 recived_id = driver.find_element(By.XPATH, f"({xpath_data.get('recivedMSG')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
@@ -952,7 +960,8 @@ class wait_for_message:
         pass
     
     def _wait_(self):
-        while time.time() < time.time() + self.waitTime or self.waitTime == 0:
+        start_time = time.time()
+        while time.time() < start_time + self.waitTime or self.waitTime == 0:
             try:
                 message_id = driver.find_element(By.XPATH, f"({xpath_data.get('msg')})[last()]").get_attribute("data-id")
             except (NoSuchElementException, StaleElementReferenceException, AttributeError):
@@ -1008,14 +1017,17 @@ class _on_message_:
                         inner_attribute = ''
                         if(len(self._reprRef.body) > 1):
                             for elm in self._reprRef.body:
-                                print(elm.get_attribute("innerHTML"))
+                                # print(elm.get_attribute("innerHTML"))
                                 inner_attribute += elm.get_attribute("innerHTML")
                             text = ''
                         else:
-                            text = self._reprRef.body.text
+                            try:
+                                text = self._reprRef.body.text
+                            except:
+                                continue
                     inner_attribute = html.unescape(inner_attribute)
-                    print("inner = ", inner_attribute)
-                    print("text = ", text)
+                    # print("inner = ", inner_attribute)
+                    # print("text = ", text)
                     char = ""
                     def is_emoji(s):
                         return emoji.emoji_count(s) > 0
