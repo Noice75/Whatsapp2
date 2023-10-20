@@ -701,6 +701,7 @@ class get_sent:
         """
         self.id = None
         self.body = None
+        self.mention : list = []
         self._get_sent_()
         pass
 
@@ -712,6 +713,7 @@ class get_sent:
             
         if(sent_id != self.id):
             self.id = sent_id
+            self.mention = _get_mention_(sent_id)
             try:
                 self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
             except (NoSuchElementException, StaleElementReferenceException):
@@ -728,6 +730,7 @@ class wait_to_send:
         '''
         self.id = None
         self.body = None
+        self.mention : list = []
         self.waitTime = waitTime
         self._wait_()
         pass
@@ -745,6 +748,7 @@ class wait_to_send:
                     self.id = sent_id
                     continue
                 self.id = sent_id
+                self.mention = _get_mention_(sent_id)
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
                     break
@@ -762,6 +766,7 @@ class _on_send_:
             def __init__(self) -> None:
                 self.id : Union[str,None] = None
                 self.body : Union[str,None]= None
+                self.mention : list = []
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -785,6 +790,7 @@ class _on_send_:
                     self._reprRef.id = sent_id
                     continue
                 self._reprRef.id = sent_id
+                self._reprRef.mention = _get_mention_(sent_id)
                 try:
                     self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",sent_id)}').text
                     threading.Thread(target=_on_send_callback_fn_, args=(self._reprRef,)).start()
@@ -817,6 +823,7 @@ class get_recived:
         """
         self.id = None
         self.body = None
+        self.mention : list = []
         self._get_recived_()
         pass
 
@@ -828,6 +835,7 @@ class get_recived:
             
         if(recived_id != self.id):
             self.id = recived_id
+            self.mention = _get_mention_(recived_id)
             try:
                 self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",recived_id)}').text
             except (NoSuchElementException, StaleElementReferenceException):
@@ -844,6 +852,7 @@ class wait_to_recive:
         '''
         self.id = None
         self.body = None
+        self.mention : list = []
         self.waitTime = waitTime
         self._wait_()
         pass
@@ -861,6 +870,7 @@ class wait_to_recive:
                     self.id = recived_id
                     continue
                 self.id = recived_id
+                self.mention = _get_mention_(recived_id)
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",recived_id)}').text
                     break
@@ -878,6 +888,7 @@ class _on_recive_:
             def __init__(self) -> None:
                 self.id : Union[str,None] = None
                 self.body : Union[str,None] = None
+                self.mention : list = []
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -896,6 +907,7 @@ class _on_recive_:
                     self._reprRef.id = recived_id
                     continue
                 self._reprRef.id = recived_id
+                self._reprRef.mention = _get_mention_(recived_id)
                 try:
                     self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",recived_id)}').text
                     threading.Thread(target=_on_recive_callback_fn_, args=(self._reprRef,)).start()
@@ -928,6 +940,7 @@ class get_message:
         """
         self.id = None
         self.body = None
+        self.mention : list = []
         self._get_message_()
         pass
 
@@ -939,6 +952,7 @@ class get_message:
             
         if(message_id != self.id):
             self.id = message_id
+            self.mention = _get_mention_(message_id)
             try:
                 self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
             except (NoSuchElementException, StaleElementReferenceException):
@@ -955,6 +969,7 @@ class wait_for_message:
         '''
         self.id = None
         self.body = None
+        self.mention : list = []
         self.waitTime = waitTime
         self._wait_()
         pass
@@ -972,6 +987,7 @@ class wait_for_message:
                     self.id = message_id
                     continue
                 self.id = message_id
+                self.mention = _get_mention_(message_id)
                 try:
                     self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
                     break
@@ -982,6 +998,58 @@ class wait_for_message:
 
     def __repr__(self) -> 'wait_for_message':
         return self
+    
+class wait_for_id:
+    def __init__(self, mention_id, waitTime : int = 0) -> None:
+        '''
+        Parameters:
+        - waitTime : Time in Seconds to wait till message is recived, 0 to wait forever (default)
+        '''
+        self.mention_id = mention_id
+        self.id = None
+        self.body = None
+        self.mention : list = []
+        self.waitTime = waitTime
+        self._wait_()
+        pass
+
+    def _wait_(self):
+        start_time = time.time()
+        print(self.waitTime)
+        while time.time() < start_time + self.waitTime or self.waitTime == 0:
+            try:
+                message_id = driver.find_element(By.XPATH, f"({xpath_data.get('msg')})[last()]").get_attribute("data-id")
+            except (NoSuchElementException, StaleElementReferenceException, AttributeError):
+                time.sleep(0.1)
+                continue
+            if(message_id != self.id):
+                if(self.id == None or self.mention_id not in message_id):
+                    self.id = message_id
+                    continue
+                self.id = message_id
+                self.mention = _get_mention_(message_id)
+                try:
+                    self.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}').text
+                    break
+                except (NoSuchElementException, StaleElementReferenceException):
+                    time.sleep(0.1)
+                    continue
+            time.sleep(0.1)
+
+    def __repr__(self) -> 'wait_for_id':
+        return self
+
+def _get_mention_(id):
+    mention = []
+    try:
+        elm = driver.find_elements(By.XPATH, f'{xpath_data.get("getMention").replace("PLACEHOLDER",id)}')
+    except:
+        return []
+    if(elm == []):
+        return []
+    for i in elm:
+        mention.append(i.get_attribute("data-jid"))
+    return mention
 
 class _on_message_:
     def __init__(self) -> None:
@@ -989,6 +1057,7 @@ class _on_message_:
             def __init__(self) -> None:
                 self.id : Union[str,None] = None
                 self.body : Union[str,None] = None
+                self.mention : list = []
                 pass
         self._repr = _repr
         self._reprRef = _repr()
@@ -1007,6 +1076,7 @@ class _on_message_:
                     self._reprRef.id = message_id
                     continue
                 self._reprRef.id = message_id
+                self._reprRef.mention = _get_mention_(message_id)
                 try:
                     try:
                         self._reprRef.body = driver.find_element(By.XPATH, f'{xpath_data.get("textByID").replace("PLACEHOLDER",message_id)}')
@@ -1028,37 +1098,39 @@ class _on_message_:
                     inner_attribute = html.unescape(inner_attribute)
                     # print("inner = ", inner_attribute)
                     # print("text = ", text)
-                    char = ""
-                    def is_emoji(s):
-                        return emoji.emoji_count(s) > 0
-                    index = 0
-                    while True:
-                        try:
-                            str = text[index]
-                        except:
-                            try:
-                                if(inner_attribute[len(text):][0] == "<"):
-                                    str = ""
-                                else:
-                                    break
-                            except:
-                                break
-                        if(inner_attribute[index] != str):
-                            emoji_found = False
-                            inner_attribute = inner_attribute[index:]
-                            for i in range(len(inner_attribute)):
-                                if(is_emoji(inner_attribute[i]) and not emoji_found):
-                                    char+=inner_attribute[i]
-                                    emoji_found = True
-                                elif(emoji_found and inner_attribute[i] == ">"):
-                                    inner_attribute = text[:index]+inner_attribute[i+1:]
-                                    if(index != 0):
-                                        char+=str
-                                    break
-                        else:
-                            char += str
-                            index += 1
-                    self._reprRef.body = char
+                    if(text == ""):
+                        continue
+                    # char = ""
+                    # def is_emoji(s):
+                    #     return emoji.emoji_count(s) > 0
+                    # index = 0
+                    # while True:
+                    #     try:
+                    #         str = text[index]
+                    #     except:
+                    #         try:
+                    #             if(inner_attribute[len(text):][0] == "<"):
+                    #                 str = ""
+                    #             else:
+                    #                 break
+                    #         except:
+                    #             break
+                    #     if(inner_attribute[index] != str):
+                    #         emoji_found = False
+                    #         inner_attribute = inner_attribute[index:]
+                    #         for i in range(len(inner_attribute)):
+                    #             if(is_emoji(inner_attribute[i]) and not emoji_found):
+                    #                 char+=inner_attribute[i]
+                    #                 emoji_found = True
+                    #             elif(emoji_found and inner_attribute[i] == ">"):
+                    #                 inner_attribute = text[:index]+inner_attribute[i+1:]
+                    #                 if(index != 0):
+                    #                     char+=str
+                    #                 break
+                    #     else:
+                    #         char += str
+                    #         index += 1
+                    self._reprRef.body = text
                     threading.Thread(target=_on_message_callback_fn_, args=(self._reprRef,)).start()
                     self._reprRef = self._repr() #reset _repr to default
                 except (NoSuchElementException, StaleElementReferenceException):
@@ -1106,6 +1178,7 @@ def unload_extension(extension_name):
 
 @on_message
 def _command_manager_(ctx):
+    # if(ctx.mention[0] != "917738409558")
     built_commands = commands.get_commands()
     cmd = ctx.body.split()[0]
     if cmd in built_commands:

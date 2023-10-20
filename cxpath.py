@@ -9,6 +9,7 @@ data = {
     "recivedMSG" : '//div[contains(@data-id, "false")]',
     "msg" : '//div[contains(@data-id, "e_")]',
     "textByID" : '(//div[@data-id="PLACEHOLDER"]//span//span)[1]',
+    "getMention" : '//div[@data-id="PLACEHOLDER"]//span[@role="button"]//span[@class="ajgl1lbb o0rubyzf _11JPr selectable-text select-all copyable-text"]',
     "emojiTextByID" : '(//div[@data-id="PLACEHOLDER"]//span[@class="Ov-s3"])',
     "msgStatus" : '//span[@aria-label="PLACEHOLDER"]',
     "searchResult" : '//div[@style[contains(.,"height: 72px; transform: translateY(72px);")]]',

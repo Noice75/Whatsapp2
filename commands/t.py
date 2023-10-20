@@ -21,5 +21,15 @@ def comeback(ctx):
     time.sleep(2)
     whatsapp.send("Here!")
 
+@commands.command(aliases=["Spam"])
+def spam(ctx):
+    num = int(ctx.body.split()[1])
+    word = ctx.body[7:]
+    if(num > 20):
+        whatsapp.send("SPAM limited to *<= 20*")
+        return
+    for i in range(num):
+        whatsapp.send(word)
+
 def setup():
     commands.setup_extension()

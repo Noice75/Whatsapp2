@@ -26,9 +26,11 @@ whiteID = None
 blackID = None
 no_limit = True
 resign = False
+stop_game = False
 def countdown(board):
     global whiteTime
     global blackTime
+    global stop_game
     while whiteTime > 0 and blackTime > 0:
         if(resign):
             break
@@ -40,8 +42,10 @@ def countdown(board):
             blackTime -= 1
     if(whiteTime <= 0):
         whatsapp.send("Black Wins By Timeout!")
+        stop_game = True
     elif(blackTime <= 0):
         whatsapp.send("White Wins By Timeout!")
+        stop_game = True
 
 
 def display_board(board):
@@ -63,9 +67,15 @@ def get_move(board):
     while True:
         try:
             if(board):
-                move = whatsapp.wait_for_id(whiteID).body
+                move = whatsapp.wait_for_id(whiteID, waitTime=whiteTime).body
+                if(move == None):
+                    return None
+                move = move.lower()
             else:
-                move = whatsapp.wait_for_id(blackID).body
+                move = whatsapp.wait_for_id(blackID, waitTime=blackTime).body
+                if(move == None):
+                    return None
+                move = move.lower()
             if move.lower() in ['resign', 'quit']:
                 return 'resign'
             return chess.Move.from_uci(move)
@@ -74,15 +84,17 @@ def get_move(board):
 
 def main():
     global resign
+    global stop_game
     resign = False
     board = chess.Board()
     if(not no_limit):
         win_checkThread = threading.Thread(target=countdown, args=(board,))
         win_checkThread.start()
-    while not board.is_game_over():
+    while not board.is_game_over() and not stop_game:
         display_board(board)
         move = get_move(board=board.turn)
-
+        if(move == None):
+            return
         if move == 'resign':
             resign = True
             if(not no_limit):
@@ -94,13 +106,20 @@ def main():
             board.push(move)
         else:
             whatsapp.send("Invalid move. Try again.")
-
-    display_board(board)
-    whatsapp.send(f"Game Over. {'Black' if board.turn else 'White'} wins!")
+    if(stop_game == False):
+        display_board(board)
+        whatsapp.send(f"Game Over. {'Black' if board.turn else 'White'} wins!")
 
 @commands.command(aliases=["Chess"])
-def chess(ctx):
-    global no_limit, whiteTime, blackTime, whiteID, blackID
+def chessfn(ctx):
+    global no_limit, whiteTime, blackTime, whiteID, blackID, resign, stop_game
+    whiteTime = 0
+    blackTime = 0
+    whiteID = None
+    blackID = None
+    no_limit = True
+    resign = False
+    stop_game = False
     whatsapp.send("Set Time, `Time constraint [0 <= Time <= 15]`")
     ctxx = whatsapp.wait_for_id(ctx.id[-17:])
     if(ctxx.body == "0"):
@@ -115,10 +134,11 @@ def chess(ctx):
             whatsapp.send(f"Invalid time limit '{ctxx.body}'")
             return
         
-        whiteTime = int(ctxx.body)
+        whiteTime = int(ctxx.body)*60
         whiteID = ctx.id[-17:]
         blackID = ctx.mention[-1]
-        blackTime = int(ctxx.body)
+        blackTime = int(ctxx.body)*60
         main()
-if __name__ == "__main__":
-    main()
+
+def setup():
+    commands.setup_extension()
