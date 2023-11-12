@@ -10,7 +10,7 @@ def onReady():
     for filename in os.listdir("./commands"):
         if filename.endswith(".py"):
             whatsapp.load_extension(f"commands/{filename[:-3]}")
-    whatsapp.open_message("3MF")
+    whatsapp.open_message("123456789")
 
 @commands.command(aliases=["Unload"])
 def unload(ctx):
@@ -58,4 +58,4 @@ def reloadall(ctx):
 def ctx(ctx):
     print(f"Message - {ctx.body}, {ctx.id}, {ctx.mention}")
 
-whatsapp.run(logLevel=logging.INFO, browser="chrome", headless=False)
+whatsapp.run(logLevel=logging.INFO, browser="chrome", headless=True)

@@ -1,36 +1,39 @@
+# Standard library imports
+import html
+import json
+import logging
+import os
+import re
+import shutil
+import sys
+import threading
+import time
+import urllib3
+from typing import Optional, Union, Any
+import getpass
+import platform
+
+# Third-party imports
+from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, WebDriverException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.webdriver import WebDriver as ChromeWebDriver
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.chrome.webdriver import WebDriver as ChromeWebDriver
-from selenium.webdriver.firefox.webdriver import WebDriver as FirefoxWebDriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.webdriver import WebDriver as FirefoxWebDriver
+from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import WebDriverException
-from selenium.common.exceptions import StaleElementReferenceException
-from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
-from typing import Optional, Union, Any
-from bs4 import BeautifulSoup
+
+# Local application/library specific imports
 from . import commands
-import threading
-import platform
-import urllib3
-import getpass
-import logging
-import shutil
-import emoji
-import html
-import time
-import json
-import re
-import sys
-import os
+
 
 dir = __file__.replace(f'{os.path.basename(__file__)}','').replace('\\','/')
 sys.path.append(dir)
