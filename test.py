@@ -122,7 +122,5 @@
 #         main()
 # if __name__ == "__main__":
 #     main()
-import threading
-def uwu():
-    print("Lol")
-threading.Thread(target=uwu).start()
+import whatsapp
+print(whatsapp._on_message_thread_)

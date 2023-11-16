@@ -1181,7 +1181,6 @@ def unload_extension(extension_name):
 
 @on_message
 def _command_manager_(ctx):
-    # if(ctx.mention[0] != "917738409558")
     built_commands = commands.get_commands()
     cmd = ctx.body.split()[0]
     if cmd in built_commands:
